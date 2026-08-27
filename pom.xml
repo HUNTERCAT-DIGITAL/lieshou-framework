@@ -15,8 +15,8 @@
   <artifactId>lieShou-framework</artifactId>
   <version>0.1.0</version>
   <packaging>pom</packaging>
-  <name>LieShou-framework</name>
-  <description>猎手云产品线核心框架（LieShouBoot 单体 / LieShouCloud 微服务 共同上游·同源唯一）</description>
+  <name>lieshou-framework</name>
+  <description>猎手云产品线核心框架（lieshou-boot 单体 / lieshou-cloud 微服务 共同上游·同源唯一）</description>
 
   <modules>
     <module>framework-jwt</module>

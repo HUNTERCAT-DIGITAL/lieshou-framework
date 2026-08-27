@@ -1,7 +1,7 @@
-# LieShou-framework · 猎手云核心框架
+# lieshou-framework · 猎手云核心框架
 
 > 猎手云产品线的**核心能力框架**（上游同源唯一）：认证 / JWT / 统一异常 / 审计 / 权限 / 领域模型 / 审批。
-> **LieShouBoot（单体）与 LieShouCloud（微服务）共用的薄壳底座**——业务逻辑只在此维护，两端装配引用。
+> **lieshou-boot（单体）与 lieshou-cloud（微服务）共用的薄壳底座**——业务逻辑只在此维护，两端装配引用。
 > **v0.1.0（RELEASE）** · 六模块 · 44 测试全过
 
 <p align="center">
@@ -14,9 +14,9 @@
 ## 设计哲学（借鉴 Spring 分层）
 
 ```
-Spring Framework  →  LieShou-framework  核心能力层（业务逻辑唯一源）
-Spring Boot       →  LieShouBoot       单体快速启动（Framework + 装配）
-Spring Cloud      →  LieShouCloud      微服务/分布式（Framework + 服务发现/网关）
+Spring Framework  →  lieshou-framework  核心能力层（业务逻辑唯一源）
+Spring Boot       →  lieshou-boot       单体快速启动（Framework + 装配）
+Spring Cloud      →  lieshou-cloud      微服务/分布式（Framework + 服务发现/网关）
 ```
 
 **规则**：业务逻辑（Service / 端口 / DTO / 领域模型）只进 Framework；各端只留 Controller + 装配 + 启动。
@@ -41,10 +41,10 @@ public interface UserAuthPort {
   ...
 }
 
-// LieShouBoot（单体）实现：本地调用
+// lieshou-boot（单体）实现：本地调用
 public class UserAuthAdapter implements UserAuthPort { ... }
 
-// LieShouCloud（微服务）实现：Feign 装配
+// lieshou-cloud（微服务）实现：Feign 装配
 public interface UserAuthClient extends UserAuthPort { ... }
 ```
 
@@ -52,11 +52,11 @@ public interface UserAuthClient extends UserAuthPort { ... }
 
 | 消费方 | 装配方式 | 测试 |
 | --- | --- | --- |
-| **LieShouBoot**（开源单体·全栈） | 本地 Adapter | 10/10 |
+| **lieshou-boot**（开源单体·全栈） | 本地 Adapter | 10/10 |
 | **auth-services**（微服务） | Feign Client | 13 全过 |
 | **user-services**（微服务） | framework-common/domain/service | 46 全过 |
 | **approval-services**（微服务） | Feign Client | 23 全过 |
-| **LieShouCloudPro**（商业组合） | 间接同源（组合微服务仓） | — |
+| **lieshou-cloud-pro**（商业组合） | 间接同源（组合微服务仓） | — |
 
 ## 快速开始（作为依赖）
 
@@ -74,17 +74,17 @@ mvn -B -ntp -DskipTests install
 
 ## 发布
 
-- **v0.1.0**（RELEASE，2026-09）：https://github.com/HUNTERCAT-DIGITAL/LieShou-framework/releases/tag/v0.1.0
+- **v0.1.0**（RELEASE，2026-09）：https://github.com/HUNTERCAT-DIGITAL/lieshou-framework/releases/tag/v0.1.0
 - 版本策略：SemVer；业务改动 → 本仓发布新版本 → 消费方 bump
 
 ## 产品线关系
 
 ```
-LieShou-framework  ←—— 唯一业务逻辑源（开源 · Apache-2.0）
+lieshou-framework  ←—— 唯一业务逻辑源（开源 · Apache-2.0）
       ↑
 ┌─────┴─────────────┐
-LieShouBoot（单体）  LieShouCloud（微服务）
-└─ 开源 · Apache-2.0 ┘        LieShouCloudPro（商业）组合微服务仓
+lieshou-boot（单体）  lieshou-cloud（微服务）
+└─ 开源 · Apache-2.0 ┘        lieshou-cloud-pro（商业）组合微服务仓
 ```
 
 ## License
