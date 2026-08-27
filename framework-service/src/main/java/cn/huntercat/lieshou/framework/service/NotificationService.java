@@ -1,22 +1,20 @@
 package cn.huntercat.lieshou.framework.service;
 
-import java.time.Instant;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import cn.huntercat.lieshou.framework.domain.Notification;
 import cn.huntercat.lieshou.framework.domain.NotificationRepository;
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * 站内通知服务（开源版消息通知模块 · 三套产品线共用）.
  *
- * <p>实体/仓库来自 framework-domain（单一事实源）；接收者维度（tenantId + userId）读写，
- * 发送端（平台管理）经 {@link #send} 创建。消费方（单体 backend / user-service 薄壳）
- * 仅保留 Controller 装配，不再各自维护实现。
+ * <p>实体/仓库来自 framework-domain（单一事实源）；接收者维度（tenantId + userId）读写， 发送端（平台管理）经 {@link #send} 创建。消费方（单体
+ * backend / user-service 薄壳） 仅保留 Controller 装配，不再各自维护实现。
  */
 @Service
 public class NotificationService {
