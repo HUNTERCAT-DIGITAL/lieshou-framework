@@ -1,4 +1,4 @@
-package cn.huntercat.lieshou.framework.auth.service;
+package cn.huntercat.lieshou.framework.auth;
 
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

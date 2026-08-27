@@ -1,4 +1,4 @@
-package cn.huntercat.lieshou.framework.auth.service;
+package cn.huntercat.lieshou.framework.auth;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
