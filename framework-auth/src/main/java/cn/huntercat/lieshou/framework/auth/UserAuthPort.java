@@ -1,6 +1,6 @@
 package cn.huntercat.lieshou.framework.auth;
 
-import cn.huntercat.lieshou.framework.auth.dto.UserAuthView;
+import cn.huntercat.lieshou.framework.common.dto.UserAuthView;
 import java.util.Map;
 
 /**

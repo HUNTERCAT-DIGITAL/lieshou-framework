@@ -1,4 +1,4 @@
-package cn.huntercat.lieshou.framework.auth.dto;
+package cn.huntercat.lieshou.framework.common.dto;
 
 import java.util.List;
 

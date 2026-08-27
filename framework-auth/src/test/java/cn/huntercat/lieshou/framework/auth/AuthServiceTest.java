@@ -22,7 +22,7 @@ import cn.huntercat.lieshou.framework.auth.AuthService;
 import cn.huntercat.lieshou.framework.auth.JwtService;
 import cn.huntercat.lieshou.framework.auth.UserAuthPort;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.LoginRequest;
-import cn.huntercat.lieshou.framework.auth.dto.UserAuthView;
+import cn.huntercat.lieshou.framework.common.dto.UserAuthView;
 import java.util.List;
 
 /** AuthService 登录链路测试（认证核心：密码校验 / 账户状态 / token 签发） */

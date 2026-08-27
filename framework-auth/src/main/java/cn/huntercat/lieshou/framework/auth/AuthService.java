@@ -12,7 +12,7 @@ import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.RegisterRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.ResetPasswordRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.SendCodeRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.TokenResponse;
-import cn.huntercat.lieshou.framework.auth.dto.UserAuthView;
+import cn.huntercat.lieshou.framework.common.dto.UserAuthView;
 import io.jsonwebtoken.Claims;
 import java.util.List;
 import java.util.Map;

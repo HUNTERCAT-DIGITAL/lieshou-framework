@@ -16,6 +16,10 @@
   <dependencies>
     <dependency>
       <groupId>cn.huntercat</groupId>
+      <artifactId>framework-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>cn.huntercat</groupId>
       <artifactId>framework-jwt</artifactId>
     </dependency>
     <dependency>
