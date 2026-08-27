@@ -13,7 +13,7 @@
 
   <groupId>cn.huntercat</groupId>
   <artifactId>lieShou-framework</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.1.0</version>
   <packaging>pom</packaging>
   <name>LieShou-framework</name>
   <description>猎手云产品线核心框架（LieShouBoot 单体 / LieShouCloud 微服务 共同上游·同源唯一）</description>
@@ -31,6 +31,14 @@
     <java.version>21</java.version>
     <jjwt.version>0.12.6</jjwt.version>
   </properties>
+
+  <distributionManagement>
+    <repository>
+      <id>github</id>
+      <name>GitHub HUNTERCAT-DIGITAL Apache Maven Packages</name>
+      <url>https://maven.pkg.github.com/HUNTERCAT-DIGITAL/LieShou-framework</url>
+    </repository>
+  </distributionManagement>
 
   <dependencyManagement>
     <dependencies>
