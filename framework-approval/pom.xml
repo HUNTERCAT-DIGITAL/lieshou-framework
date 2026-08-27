@@ -23,10 +23,6 @@
       <artifactId>framework-common</artifactId>
     </dependency>
     <dependency>
-      <groupId>cn.huntercat</groupId>
-      <artifactId>framework-service</artifactId>
-    </dependency>
-    <dependency>
       <groupId>jakarta.validation</groupId>
       <artifactId>jakarta.validation-api</artifactId>
     </dependency>

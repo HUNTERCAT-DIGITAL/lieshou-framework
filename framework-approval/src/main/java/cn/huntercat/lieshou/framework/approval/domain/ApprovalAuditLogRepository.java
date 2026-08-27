@@ -1,4 +1,4 @@
-package cn.huntercat.lieshou.framework.domain;
+package cn.huntercat.lieshou.framework.approval.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

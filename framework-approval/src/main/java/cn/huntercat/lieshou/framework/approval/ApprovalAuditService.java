@@ -4,10 +4,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import cn.huntercat.lieshou.framework.domain.ApprovalAuditLog;
-import cn.huntercat.lieshou.framework.domain.ApprovalAuditLog.Action;
-import cn.huntercat.lieshou.framework.domain.ApprovalAuditLog.Outcome;
-import cn.huntercat.lieshou.framework.domain.ApprovalAuditLogRepository;
+import cn.huntercat.lieshou.framework.approval.domain.ApprovalAuditLog;
+import cn.huntercat.lieshou.framework.approval.domain.ApprovalAuditLog.Action;
+import cn.huntercat.lieshou.framework.approval.domain.ApprovalAuditLog.Outcome;
+import cn.huntercat.lieshou.framework.approval.domain.ApprovalAuditLogRepository;
 
 /**
  * 审批操作审计服务（ADR-0032 阶段 2 · DATA_SECURITY.md §7 · append-only）.
