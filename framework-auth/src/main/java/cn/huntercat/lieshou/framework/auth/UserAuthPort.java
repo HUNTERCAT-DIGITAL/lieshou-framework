@@ -32,4 +32,7 @@ public interface UserAuthPort {
 
   /** 重置密码（body: {password}） */
   void updateUserPassword(Long id, Map<String, String> body);
+
+  /** 按用户名查可登录租户选项（多租户登录前 · tenantOptions 端点） */
+  java.util.List<java.util.Map<String, Object>> tenantOptions(String username);
 }

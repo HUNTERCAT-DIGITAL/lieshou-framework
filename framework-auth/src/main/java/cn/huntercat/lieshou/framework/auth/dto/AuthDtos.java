@@ -38,7 +38,12 @@ public final class AuthDtos {
               description =
                   "Tenant edition: GENERIC | LAYER | LEGALMIND | ZHIYE | JMZZ (ADR-0035/0036)",
               example = "GENERIC")
-          String tenantEdition) {}
+          String tenantEdition,
+      @Schema(
+              description =
+                  "Available tenants for this username (多租户登录前选租户 · 8f0d60e)",
+              example = "[]")
+          java.util.List<java.util.Map<String, Object>> availableTenants) {}
 
   @Schema(description = "Error response body")
   public record ErrorResponse(
@@ -79,6 +84,10 @@ public final class AuthDtos {
                   "Invite code (optional; auto-joins tenant with invite role · ADR-0023 P2)",
               example = "AB12CD34")
           String inviteCode) {}
+
+  /** 切换租户请求（先登录后选租户） */
+  public record SwitchTenantRequest(
+      @NotBlank String refreshToken, @NotBlank String tenantCode) {}
 
   @Schema(description = "Reset password request (via code)")
   public record ResetPasswordRequest(

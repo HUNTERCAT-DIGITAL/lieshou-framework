@@ -86,7 +86,8 @@ public class AuthService {
         user.username(),
         tenantCode,
         user.tenantName(),
-        user.tenantEdition());
+        user.tenantEdition(),
+        tenantOptions(user.username()));
   }
 
   /** 登录成功回写 last_login_at（失败静默，不影响登录主流程）. */
@@ -168,7 +169,8 @@ public class AuthService {
         req.username(),
         tcode,
         tname,
-        tedition);
+        tedition,
+        tenantOptions(req.username()));
   }
 
   /** 忘记密码：校验 code → 按 phone/email 查用户 → 改密 */
@@ -228,7 +230,8 @@ public class AuthService {
         user.username(),
         tcode,
         user.tenantName(),
-        user.tenantEdition());
+        user.tenantEdition(),
+        tenantOptions(user.username()));
   }
 
   /**
@@ -264,7 +267,8 @@ public class AuthService {
         username,
         tenantCode,
         null,
-        null);
+        null,
+        List.of());
   }
 
   /** 给 AuthController.me 用：从已验证的 JWT Claims 提取用户信息. */
@@ -275,5 +279,57 @@ public class AuthService {
         "tenantCode", claims.get("tcode", String.class),
         "username", claims.getSubject(),
         "roles", claims.get("roles", List.class));
+  }
+
+  /** 按用户名查可登录租户选项（多租户登录前 · tenant-options 端点） */
+  public java.util.List<java.util.Map<String, Object>> tenantOptions(String username) {
+    try {
+      return userClient.tenantOptions(username);
+    } catch (Exception e) {
+      // 服务不可达/查询失败 → 空列表，前端回退默认租户登录
+      return java.util.List.of();
+    }
+  }
+
+  /** 切换租户：refresh token + 目标租户编码 → 新双 token（先登录后选租户） */
+  public TokenResponse switchTenant(String refreshToken, String tenantCode) {
+    if (!jwt.validate(refreshToken)) {
+      throw new BadCredentialsException("INVALID_REFRESH_TOKEN");
+    }
+    Claims c = jwt.parse(refreshToken);
+    if (!"refresh".equals(c.get("typ"))) {
+      throw new BadCredentialsException("WRONG_TOKEN_TYPE");
+    }
+    String username = c.getSubject();
+    String tcode = (tenantCode == null || tenantCode.isBlank()) ? DEFAULT_TENANT_CODE : tenantCode;
+    UserAuthView user;
+    try {
+      user = userClient.findByTenantAndUsername(tcode, username);
+    } catch (Exception e) {
+      throw new UsernameNotFoundException("USER_NOT_FOUND: " + username);
+    }
+    if (user == null || user.id() == null) {
+      throw new UsernameNotFoundException("USER_NOT_FOUND: " + username);
+    }
+    String status = user.status() == null ? "ACTIVE" : user.status();
+    if (!"ACTIVE".equals(status)) {
+      throw new BadCredentialsException("ACCOUNT_" + status);
+    }
+    java.util.List<String> roles =
+        user.roles() == null || user.roles().isEmpty() ? java.util.List.of("USER") : user.roles();
+    String access = jwt.generateAccessToken(user.id(), user.tenantId(), tcode, username, roles);
+    String newRefresh = jwt.generateRefreshToken(user.id(), username);
+    markLastLogin(user.id());
+    return new TokenResponse(
+        access,
+        newRefresh,
+        jwt.getAccessTtlSeconds(),
+        "Bearer",
+        user.id(),
+        username,
+        tcode,
+        user.tenantName(),
+        user.tenantEdition(),
+        tenantOptions(user.username()));
   }
 }
