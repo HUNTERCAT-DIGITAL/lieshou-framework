@@ -32,13 +32,6 @@
     <jjwt.version>0.12.6</jjwt.version>
   </properties>
 
-  <distributionManagement>
-    <repository>
-      <id>github</id>
-      <name>GitHub HUNTERCAT-DIGITAL Apache Maven Packages</name>
-      <url>https://maven.pkg.github.com/HUNTERCAT-DIGITAL/LieShou-framework</url>
-    </repository>
-  </distributionManagement>
 
   <dependencyManagement>
     <dependencies>
