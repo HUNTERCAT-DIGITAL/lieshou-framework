@@ -21,6 +21,7 @@
   <modules>
     <module>framework-jwt</module>
     <module>framework-common</module>
+    <module>framework-domain</module>
     <module>framework-auth</module>
   </modules>
 
@@ -39,6 +40,11 @@
       <dependency>
         <groupId>cn.huntercat</groupId>
         <artifactId>framework-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>cn.huntercat</groupId>
+        <artifactId>framework-domain</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
