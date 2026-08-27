@@ -1,9 +1,5 @@
 package cn.huntercat.lieshou.framework.service;
 
-import java.security.SecureRandom;
-import java.time.Instant;
-import java.util.List;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,13 +9,15 @@ import cn.huntercat.lieshou.framework.common.api.ErrorCode;
 import cn.huntercat.lieshou.framework.domain.TenantInvite;
 import cn.huntercat.lieshou.framework.domain.TenantInviteRepository;
 import cn.huntercat.lieshou.framework.domain.TenantRepository;
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.util.List;
 
 /**
  * 租户邀请码业务（ADR-0023 Phase 2 · 三套产品线共用）.
  *
- * <p>从两端 Controller 内联收敛：唯一邀请码生成（去易混淆字符集 + 冲突重试）、租户存在性校验、
- * role 白名单、过期时间计算、revoke（租户维度防越权）。错误抛 {@link BaseException}
- * （错误码契约：INVALID_ROLE / NOT_FOUND / FAILED_TO_GENERATE_INVITE）。
+ * <p>从两端 Controller 内联收敛：唯一邀请码生成（去易混淆字符集 + 冲突重试）、租户存在性校验、 role 白名单、过期时间计算、revoke（租户维度防越权）。错误抛
+ * {@link BaseException} （错误码契约：INVALID_ROLE / NOT_FOUND / FAILED_TO_GENERATE_INVITE）。
  */
 @Service
 public class TenantInviteService {
@@ -72,9 +70,7 @@ public class TenantInviteService {
   @Transactional
   public void revoke(Long tenantId, Long id) {
     TenantInvite invite =
-        inviteRepo
-            .findById(id)
-            .orElseThrow(() -> new BaseException(ErrorCode.NOT_FOUND, "邀请码不存在"));
+        inviteRepo.findById(id).orElseThrow(() -> new BaseException(ErrorCode.NOT_FOUND, "邀请码不存在"));
     if (!invite.getTenantId().equals(tenantId)) {
       throw new BaseException(ErrorCode.NOT_FOUND, "邀请码不存在");
     }

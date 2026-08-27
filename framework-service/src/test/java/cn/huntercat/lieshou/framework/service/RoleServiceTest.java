@@ -1,25 +1,23 @@
 package cn.huntercat.lieshou.framework.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.List;
-import java.util.Optional;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import cn.huntercat.lieshou.framework.common.api.BaseException;
 import cn.huntercat.lieshou.framework.domain.Role;
 import cn.huntercat.lieshou.framework.domain.RoleRepository;
+import java.util.List;
+import java.util.Optional;
 
 /** RoleService 单测（ADR-0044 阶段 1 · 业务唯一源锁定）。 */
 @ExtendWith(MockitoExtension.class)
@@ -43,7 +41,8 @@ class RoleServiceTest {
 
   @Test
   void create_code冲突抛ROLE_CODE_TAKEN() {
-    when(repo.findByCode("ops")).thenReturn(Optional.of(new Role("ops", "x", Role.Scope.TENANT, null, false)));
+    when(repo.findByCode("ops"))
+        .thenReturn(Optional.of(new Role("ops", "x", Role.Scope.TENANT, null, false)));
 
     assertThatThrownBy(() -> service.create("ops", "运维", null, null))
         .isInstanceOf(BaseException.class)
@@ -67,11 +66,13 @@ class RoleServiceTest {
 
   @Test
   void update_system角色抛SYSTEM_ROLE_READONLY() {
-    when(repo.findById(1L)).thenReturn(Optional.of(new Role("ADMIN", "管理员", Role.Scope.PLATFORM, null, true)));
+    when(repo.findById(1L))
+        .thenReturn(Optional.of(new Role("ADMIN", "管理员", Role.Scope.PLATFORM, null, true)));
 
     assertThatThrownBy(() -> service.update(1L, "x", null, null))
         .isInstanceOf(BaseException.class)
-        .satisfies(e -> assertThat(((BaseException) e).errorCode()).isEqualTo("SYSTEM_ROLE_READONLY"));
+        .satisfies(
+            e -> assertThat(((BaseException) e).errorCode()).isEqualTo("SYSTEM_ROLE_READONLY"));
     verify(repo, never()).save(any(Role.class));
   }
 
@@ -86,14 +87,17 @@ class RoleServiceTest {
 
   @Test
   void delete_自定义角色可删_system不可() {
-    when(repo.findById(1L)).thenReturn(Optional.of(new Role("ops", "运维", Role.Scope.TENANT, null, false)));
+    when(repo.findById(1L))
+        .thenReturn(Optional.of(new Role("ops", "运维", Role.Scope.TENANT, null, false)));
     service.delete(1L);
     verify(repo).delete(any(Role.class));
 
-    when(repo.findById(2L)).thenReturn(Optional.of(new Role("ADMIN", "管理员", Role.Scope.PLATFORM, null, true)));
+    when(repo.findById(2L))
+        .thenReturn(Optional.of(new Role("ADMIN", "管理员", Role.Scope.PLATFORM, null, true)));
     assertThatThrownBy(() -> service.delete(2L))
         .isInstanceOf(BaseException.class)
-        .satisfies(e -> assertThat(((BaseException) e).errorCode()).isEqualTo("SYSTEM_ROLE_READONLY"));
+        .satisfies(
+            e -> assertThat(((BaseException) e).errorCode()).isEqualTo("SYSTEM_ROLE_READONLY"));
   }
 
   @Test
