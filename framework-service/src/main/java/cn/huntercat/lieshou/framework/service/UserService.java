@@ -249,6 +249,41 @@ public class UserService {
             });
   }
 
+  /**
+   * 跨租户查该 username 可登录的租户（用户 ACTIVE 且租户 ACTIVE）.
+   *
+   * <p>供登录页同用户名多租户选择；仅返回租户 code/name/edition，无敏感信息。 统一微服务版 REST（findAllByUsername）与端口版（取首个）的分叉。
+   */
+  @Transactional(readOnly = true)
+  public List<java.util.Map<String, Object>> tenantOptions(String username) {
+    List<User> users = repo.findAllByUsername(username);
+    if (users.isEmpty()) {
+      return List.of();
+    }
+    java.util.Map<Long, Tenant> tenantsById =
+        tenantRepo.findAllById(users.stream().map(User::getTenantId).distinct().toList()).stream()
+            .collect(java.util.stream.Collectors.toMap(Tenant::getId, t -> t));
+    return users.stream()
+        .filter(u -> u.getStatus() == null || u.getStatus() == User.Status.ACTIVE)
+        .map(User::getTenantId)
+        .distinct()
+        .map(tenantsById::get)
+        .filter(java.util.Objects::nonNull)
+        .filter(t -> t.getStatus() == null || t.getStatus() == Tenant.Status.ACTIVE)
+        .map(
+            t ->
+                java.util.Map.<String, Object>of(
+                    "tenantId",
+                    t.getId(),
+                    "tenantCode",
+                    t.getCode(),
+                    "tenantName",
+                    t.getName(),
+                    "tenantEdition",
+                    t.getEdition() == null ? null : t.getEdition().name()))
+        .toList();
+  }
+
   // ============================================================
   // 工具
   // ============================================================
