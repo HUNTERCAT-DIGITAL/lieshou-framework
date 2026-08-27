@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+jobs:
+  # —— 构建 + 测试（六模块 44 测试）——
+  build:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Maven verify（编译 + 44 测试）
+        run: mvn -B -ntp verify
+
+  # —— 发布（tag v* 触发）：构建 jar → 上传 Release 资产 ——
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Package
+        run: mvn -B -ntp -DskipTests package
+      - name: 上传 Release 资产（六模块 jar）
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            framework-*/target/*.jar
