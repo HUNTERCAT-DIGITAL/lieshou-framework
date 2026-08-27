@@ -4,8 +4,8 @@ import cn.huntercat.lieshou.framework.auth.dto.UserAuthView;
 import java.util.Map;
 
 /**
- * auth → user 本地调用契约（单体重组：原 Feign 接口去掉 {@code @FeignClient}，
- * 由 {@link UserAuthAdapter} 直接调用 user 模块 Repository/Service）。
+ * auth → user 本地调用契约（单体重组：原 Feign 接口去掉 {@code @FeignClient}， 由 {@link UserAuthAdapter} 直接调用 user 模块
+ * Repository/Service）。
  */
 public interface UserAuthPort {
 

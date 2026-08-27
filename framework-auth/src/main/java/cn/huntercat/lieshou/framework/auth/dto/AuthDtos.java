@@ -40,8 +40,7 @@ public final class AuthDtos {
               example = "GENERIC")
           String tenantEdition,
       @Schema(
-              description =
-                  "Available tenants for this username (多租户登录前选租户 · 8f0d60e)",
+              description = "Available tenants for this username (多租户登录前选租户 · 8f0d60e)",
               example = "[]")
           java.util.List<java.util.Map<String, Object>> availableTenants) {}
 
@@ -86,8 +85,7 @@ public final class AuthDtos {
           String inviteCode) {}
 
   /** 切换租户请求（先登录后选租户） */
-  public record SwitchTenantRequest(
-      @NotBlank String refreshToken, @NotBlank String tenantCode) {}
+  public record SwitchTenantRequest(@NotBlank String refreshToken, @NotBlank String tenantCode) {}
 
   @Schema(description = "Reset password request (via code)")
   public record ResetPasswordRequest(

@@ -32,8 +32,11 @@ public class TenantRegistrationService {
   private final RoleRepository roles;
   private final PasswordEncoder encoder;
 
-  public TenantRegistrationService(PasswordEncoder encoder, 
-      TenantRepository tenants, UserRepository users, RoleRepository roles) {
+  public TenantRegistrationService(
+      PasswordEncoder encoder,
+      TenantRepository tenants,
+      UserRepository users,
+      RoleRepository roles) {
     this.tenants = tenants;
     this.users = users;
     this.roles = roles;

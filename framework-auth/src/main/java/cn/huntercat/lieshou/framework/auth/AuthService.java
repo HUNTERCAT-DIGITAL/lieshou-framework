@@ -5,8 +5,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import cn.huntercat.lieshou.framework.auth.UserAuthPort;
-import cn.huntercat.lieshou.framework.auth.dto.UserAuthView;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.LoginRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.LoginWithCodeRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.RefreshRequest;
@@ -14,6 +12,7 @@ import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.RegisterRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.ResetPasswordRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.SendCodeRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.TokenResponse;
+import cn.huntercat.lieshou.framework.auth.dto.UserAuthView;
 import io.jsonwebtoken.Claims;
 import java.util.List;
 import java.util.Map;
@@ -146,7 +145,8 @@ public class AuthService {
     try {
       created = userClient.createUser(createBody);
     } catch (IllegalArgumentException e) {
-      throw new BadCredentialsException(e.getMessage() == null ? "REGISTER_FAILED" : e.getMessage());
+      throw new BadCredentialsException(
+          e.getMessage() == null ? "REGISTER_FAILED" : e.getMessage());
     } catch (Exception e) {
       throw new BadCredentialsException("REGISTER_FAILED");
     }

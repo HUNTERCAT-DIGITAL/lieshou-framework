@@ -1,5 +1,8 @@
 package cn.huntercat.lieshou.framework.auth.service;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -7,8 +10,6 @@ import cn.huntercat.lieshou.framework.auth.JwtService;
 import cn.huntercat.lieshou.framework.jwt.JwtSupport;
 import io.jsonwebtoken.Claims;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 /** JwtService 签发/解析测试（全栈单体 · 认证核心） */
 class JwtServiceTest {

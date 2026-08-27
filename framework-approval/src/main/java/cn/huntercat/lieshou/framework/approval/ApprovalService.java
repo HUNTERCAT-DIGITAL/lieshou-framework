@@ -1,5 +1,11 @@
 package cn.huntercat.lieshou.framework.approval;
 
+import org.springframework.stereotype.Service;
+
+import cn.huntercat.lieshou.framework.approval.domain.ApprovalAuditLog;
+import cn.huntercat.lieshou.framework.approval.domain.ApprovalAuditLogRepository;
+import cn.huntercat.lieshou.framework.approval.domain.ApprovalRequest;
+import cn.huntercat.lieshou.framework.approval.domain.ApprovalRequestRepository;
 import cn.huntercat.lieshou.framework.approval.dto.AlreadyDecidedException;
 import cn.huntercat.lieshou.framework.approval.dto.ApprovalDtos.CreateApprovalRequest;
 import cn.huntercat.lieshou.framework.approval.dto.ApprovalDtos.DecideRequest;
@@ -11,22 +17,16 @@ import cn.huntercat.lieshou.framework.approval.dto.NotFoundException;
 import cn.huntercat.lieshou.framework.approval.port.NotifierPort;
 import cn.huntercat.lieshou.framework.approval.port.UserQueryPort;
 import cn.huntercat.lieshou.framework.approval.port.UserView;
-import cn.huntercat.lieshou.framework.approval.domain.ApprovalAuditLog;
-import cn.huntercat.lieshou.framework.approval.domain.ApprovalAuditLogRepository;
-import cn.huntercat.lieshou.framework.approval.domain.ApprovalRequest;
-import cn.huntercat.lieshou.framework.approval.domain.ApprovalRequestRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.springframework.stereotype.Service;
 
 /**
  * 审批业务核心（上游同源唯一）。
  *
- * <p>状态机（ADR-0032）：PENDING → APPROVED / REJECTED / CANCELLED；租户内强制隔离；
- * 审计（ApprovalAuditService）+ 通知（NotifierPort）贯穿。
- * web 层（租户/用户头解析、clientIp）由消费方 Controller 负责。
+ * <p>状态机（ADR-0032）：PENDING → APPROVED / REJECTED / CANCELLED；租户内强制隔离； 审计（ApprovalAuditService）+
+ * 通知（NotifierPort）贯穿。 web 层（租户/用户头解析、clientIp）由消费方 Controller 负责。
  */
 @Service
 public class ApprovalService {
@@ -87,24 +87,43 @@ public class ApprovalService {
 
   /** 通过（PENDING → APPROVED · 仅审批人） */
   public ApprovalRequest approve(
-      Long id, Long tenantId, Long userId, DecideRequest body, String clientIp, String userAgent, String requestId) {
+      Long id,
+      Long tenantId,
+      Long userId,
+      DecideRequest body,
+      String clientIp,
+      String userAgent,
+      String requestId) {
     ApprovalRequest a = findTenantRequest(id, tenantId);
     requirePending(a, "approve");
     requireApprover(a, userId);
     a.setStatus(ApprovalRequest.Status.APPROVED);
-    if (body != null && body.comment() != null && !body.comment().isBlank()) a.setComment(body.comment());
+    if (body != null && body.comment() != null && !body.comment().isBlank())
+      a.setComment(body.comment());
     decide(a, userId);
     ApprovalRequest saved = repo.save(a);
     auditService.recordSuccess(
-        tenantId, userId, ApprovalAuditLog.Action.APPROVE, saved.getId(),
-        "通过审批 " + saved.getTitle(), clientIp, userAgent, requestId);
+        tenantId,
+        userId,
+        ApprovalAuditLog.Action.APPROVE,
+        saved.getId(),
+        "通过审批 " + saved.getTitle(),
+        clientIp,
+        userAgent,
+        requestId);
     notifier.notifyRequester(tenantId, saved, "通过");
     return saved;
   }
 
   /** 驳回（PENDING → REJECTED · 仅审批人 · comment 必填） */
   public ApprovalRequest reject(
-      Long id, Long tenantId, Long userId, RejectRequest body, String clientIp, String userAgent, String requestId) {
+      Long id,
+      Long tenantId,
+      Long userId,
+      RejectRequest body,
+      String clientIp,
+      String userAgent,
+      String requestId) {
     ApprovalRequest a = findTenantRequest(id, tenantId);
     requirePending(a, "reject");
     requireApprover(a, userId);
@@ -113,15 +132,27 @@ public class ApprovalService {
     decide(a, userId);
     ApprovalRequest saved = repo.save(a);
     auditService.recordSuccess(
-        tenantId, userId, ApprovalAuditLog.Action.REJECT, saved.getId(),
-        "驳回审批 " + saved.getTitle(), clientIp, userAgent, requestId);
+        tenantId,
+        userId,
+        ApprovalAuditLog.Action.REJECT,
+        saved.getId(),
+        "驳回审批 " + saved.getTitle(),
+        clientIp,
+        userAgent,
+        requestId);
     notifier.notifyRequester(tenantId, saved, "驳回");
     return saved;
   }
 
   /** 撤销（PENDING → CANCELLED · 仅发起人） */
   public ApprovalRequest cancel(
-      Long id, Long tenantId, Long userId, DecideRequest body, String clientIp, String userAgent, String requestId) {
+      Long id,
+      Long tenantId,
+      Long userId,
+      DecideRequest body,
+      String clientIp,
+      String userAgent,
+      String requestId) {
     ApprovalRequest a = findTenantRequest(id, tenantId);
     requirePending(a, "cancel");
     if (!a.getRequesterId().equals(userId)) {
@@ -131,8 +162,14 @@ public class ApprovalService {
     decide(a, userId);
     ApprovalRequest saved = repo.save(a);
     auditService.recordSuccess(
-        tenantId, userId, ApprovalAuditLog.Action.CANCEL, saved.getId(),
-        "撤销审批 " + saved.getTitle(), clientIp, userAgent, requestId);
+        tenantId,
+        userId,
+        ApprovalAuditLog.Action.CANCEL,
+        saved.getId(),
+        "撤销审批 " + saved.getTitle(),
+        clientIp,
+        userAgent,
+        requestId);
     return saved;
   }
 
@@ -160,8 +197,12 @@ public class ApprovalService {
     long inbox = 0L;
     long mine = 0L;
     if (userId != null) {
-      inbox = repo.countByTenantIdAndApproverIdAndStatus(tenantId, userId, ApprovalRequest.Status.PENDING);
-      mine = repo.countByTenantIdAndRequesterIdAndStatus(tenantId, userId, ApprovalRequest.Status.PENDING);
+      inbox =
+          repo.countByTenantIdAndApproverIdAndStatus(
+              tenantId, userId, ApprovalRequest.Status.PENDING);
+      mine =
+          repo.countByTenantIdAndRequesterIdAndStatus(
+              tenantId, userId, ApprovalRequest.Status.PENDING);
     }
     return Map.of("inbox", inbox, "mine", mine);
   }
