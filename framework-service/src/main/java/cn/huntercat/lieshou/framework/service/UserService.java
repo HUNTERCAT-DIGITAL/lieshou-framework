@@ -191,6 +191,26 @@ public class UserService {
     return repo.save(u);
   }
 
+  /**
+   * 自助修改密码（本人操作 · 校验原密码 · ADR-0044 阶段 3+）。
+   *
+   * <p>错误契约：USER_NOT_FOUND / OLD_PASSWORD_MISMATCH / INVALID_PASSWORD。 校验通过后编码入库，不影响租户/角色等其余字段；供
+   * /users/me/password 薄壳端点调用。
+   */
+  @Transactional
+  public void changePassword(Long userId, String oldPassword, String newPassword) {
+    User u =
+        repo.findById(userId).orElseThrow(() -> new BaseException(ErrorCode.NOT_FOUND, "用户不存在"));
+    if (oldPassword == null || !passwordEncoder.matches(oldPassword, u.getPasswordHash())) {
+      throw new BaseException("OLD_PASSWORD_MISMATCH", HttpStatus.BAD_REQUEST, "原密码不正确");
+    }
+    if (newPassword == null || newPassword.length() < 6) {
+      throw new BaseException("INVALID_PASSWORD", HttpStatus.BAD_REQUEST, "新密码至少 6 位");
+    }
+    u.setPasswordHash(passwordEncoder.encode(newPassword));
+    repo.save(u);
+  }
+
   /** 删除用户（租户维度）。 */
   @Transactional
   public User delete(Long id, Long tenantId) {

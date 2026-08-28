@@ -172,6 +172,54 @@ class UserServiceTest {
   }
 
   @Test
+  void changePassword_旧密码正确则重新编码() {
+    User u = user(1L, 7L, "u");
+    u.setPasswordHash("hashed-old");
+    when(repo.findById(1L)).thenReturn(Optional.of(u));
+    when(repo.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(passwordEncoder.matches("oldpass1", "hashed-old")).thenReturn(true);
+    when(passwordEncoder.encode("newpass123")).thenReturn("hashed-new");
+
+    service.changePassword(1L, "oldpass1", "newpass123");
+
+    assertThat(u.getPasswordHash()).isEqualTo("hashed-new");
+  }
+
+  @Test
+  void changePassword_旧密码错误抛OLD_PASSWORD_MISMATCH() {
+    User u = user(1L, 7L, "u");
+    u.setPasswordHash("hashed-old");
+    when(repo.findById(1L)).thenReturn(Optional.of(u));
+    when(passwordEncoder.matches("wrong", "hashed-old")).thenReturn(false);
+
+    assertThatThrownBy(() -> service.changePassword(1L, "wrong", "newpass123"))
+        .isInstanceOf(BaseException.class)
+        .satisfies(
+            e -> assertThat(((BaseException) e).errorCode()).isEqualTo("OLD_PASSWORD_MISMATCH"));
+  }
+
+  @Test
+  void changePassword_新密码过短抛INVALID_PASSWORD() {
+    User u = user(1L, 7L, "u");
+    u.setPasswordHash("hashed-old");
+    when(repo.findById(1L)).thenReturn(Optional.of(u));
+    when(passwordEncoder.matches("oldpass1", "hashed-old")).thenReturn(true);
+
+    assertThatThrownBy(() -> service.changePassword(1L, "oldpass1", "123"))
+        .isInstanceOf(BaseException.class)
+        .satisfies(e -> assertThat(((BaseException) e).errorCode()).isEqualTo("INVALID_PASSWORD"));
+  }
+
+  @Test
+  void changePassword_用户不存在抛NOT_FOUND() {
+    when(repo.findById(99L)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> service.changePassword(99L, "old", "newpass123"))
+        .isInstanceOf(BaseException.class)
+        .satisfies(e -> assertThat(((BaseException) e).errorCode()).isEqualTo("NOT_FOUND"));
+  }
+
+  @Test
   void authView_租户停用抛TENANT_DISABLED() {
     Tenant t = new Tenant("x", "acme");
     t.setStatus(Tenant.Status.DISABLED);
