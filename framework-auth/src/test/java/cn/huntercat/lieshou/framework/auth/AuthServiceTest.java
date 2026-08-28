@@ -4,9 +4,9 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -38,7 +38,12 @@ class AuthServiceTest {
   @Mock private UserAuthPort userClient;
   @Mock private PasswordEncoder passwordEncoder;
 
-  @InjectMocks private AuthService authService;
+  private AuthService authService;
+
+  @BeforeEach
+  void setUp() {
+    authService = new AuthService(jwt, userClient, passwordEncoder, "huntercat");
+  }
 
   private UserAuthView user(String status) {
     return new UserAuthView(

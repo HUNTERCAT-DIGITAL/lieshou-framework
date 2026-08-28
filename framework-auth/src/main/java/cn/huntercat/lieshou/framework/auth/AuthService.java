@@ -26,21 +26,22 @@ import java.util.Map;
 @Service
 public class AuthService {
 
-  /**
-   * 默认租户编码（未传 tenantCode 时） · ADR-0022 · 可配置（auth.default-tenant-code），
-   * 缺省 huntercat（平台主租户）；客户栈（如 haizan）通过配置覆盖。
-   */
-  @Value("${auth.default-tenant-code:huntercat}")
-  private String defaultTenantCode;
-
   private final JwtService jwt;
   private final UserAuthPort userClient;
   private final PasswordEncoder passwordEncoder;
 
-  public AuthService(JwtService jwt, UserAuthPort userClient, PasswordEncoder passwordEncoder) {
+  /** 默认租户编码（未传 tenantCode 时） · ADR-0022 · 可配置（auth.default-tenant-code），缺省 huntercat。 */
+  private final String defaultTenantCode;
+
+  public AuthService(
+      JwtService jwt,
+      UserAuthPort userClient,
+      PasswordEncoder passwordEncoder,
+      @Value("${auth.default-tenant-code:huntercat}") String defaultTenantCode) {
     this.jwt = jwt;
     this.userClient = userClient;
     this.passwordEncoder = passwordEncoder;
+    this.defaultTenantCode = defaultTenantCode;
   }
 
   /**
@@ -141,8 +142,7 @@ public class AuthService {
       // 邀请注册：租户/角色由 user-service 按邀请码解析（ADR-0023 P2）
       createBody.put("inviteCode", req.inviteCode());
     } else {
-      createBody.put(
-          "tenantCode", req.tenantCode() == null ? defaultTenantCode : req.tenantCode());
+      createBody.put("tenantCode", req.tenantCode() == null ? defaultTenantCode : req.tenantCode());
     }
     if ("SMS".equals(req.channel())) {
       createBody.put("phone", req.target());

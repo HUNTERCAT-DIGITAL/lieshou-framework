@@ -2,7 +2,7 @@
 
 > 猎手云产品线的**核心能力框架**（上游同源唯一）：认证 / JWT / 统一异常 / 审计 / 权限 / 领域模型 / 审批。
 > **lieshou-boot（单体）与 lieshou-cloud（微服务）共用的薄壳底座**——业务逻辑只在此维护，两端装配引用。
-> **v0.1.0（RELEASE）** · 六模块 · 44 测试全过
+> **v0.1.0（RELEASE）** · 六模块 · 57 测试全过
 
 <p align="center">
   <img src="https://img.shields.io/badge/Java-21-orange" alt="Java 21"/>
@@ -28,9 +28,9 @@ Spring Cloud      →  lieshou-cloud      微服务/分布式（Framework + 服�
 | **framework-jwt** | JWT 签发/解析/密钥（JwtSupport）+ 自动装配 | 无 Web 依赖（servlet/webflux 通用） |
 | **framework-common** | 统一异常 / ErrorCode / 租户上下文 / 审计注解 / 权限注解 | servlet 栈服务共用 |
 | **framework-domain** | 领域模型（JPA 实体 + Repository）：用户/租户/角色/验证码/审计/通知 | spring-data-jpa |
-| **framework-service** | 领域服务：验证码 / 审计 / 租户注册 + CodeSender 端口 | domain + common |
+| **framework-service** | 领域服务：用户/租户/角色/邀请码/通知/验证码/审计生命周期（ADR-0044 上收）+ CodeSender 端口 | domain + common |
 | **framework-approval** | 审批业务：ApprovalService 状态机 + 审批实体 + UserQueryPort/NotifierPort | domain + common |
-| **framework-auth** | 认证业务：AuthService / JwtService / UserAuthPort（端口）/ DTO | jwt + security |
+| **framework-auth** | 认证业务：AuthService（登录/验证码/注册/重置/切换租户/多租户选项）/ JwtService / UserAuthPort（端口）/ DTO | jwt + security |
 
 ## 端口-适配器模式（单体本地实现 / 微服务 Feign 装配）
 
