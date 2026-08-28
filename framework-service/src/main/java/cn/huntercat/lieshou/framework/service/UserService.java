@@ -17,7 +17,6 @@ import cn.huntercat.lieshou.framework.domain.TenantRepository;
 import cn.huntercat.lieshou.framework.domain.User;
 import cn.huntercat.lieshou.framework.domain.UserRepository;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -74,6 +73,7 @@ public class UserService {
       String tenantCode,
       String inviteCode,
       Long forcedTenantId) {
+    validatePassword(password);
     Tenant tenant;
     String role = "USER";
     if (inviteCode != null && !inviteCode.isBlank()) {
@@ -179,16 +179,34 @@ public class UserService {
       }
     }
     if (roles != null && roles.length > 0) {
-      List<Role> newRoles =
-          Arrays.stream(roles).map(this::roleByCode).filter(java.util.Objects::nonNull).toList();
-      if (!newRoles.isEmpty()) {
-        u.setRoles(newRoles);
+      // 未知角色码报错（不再静默丢弃——避免误传角色码被悄悄忽略）
+      List<Role> newRoles = new java.util.ArrayList<>();
+      for (String code : roles) {
+        Role role = roleByCode(code);
+        if (role == null) {
+          throw new BaseException("INVALID_ROLE", HttpStatus.BAD_REQUEST, "角色不存在: " + code);
+        }
+        newRoles.add(role);
       }
+      u.setRoles(newRoles);
     }
     if (password != null && !password.isBlank()) {
+      validatePassword(password);
       u.setPasswordHash(passwordEncoder.encode(password));
     }
     return repo.save(u);
+  }
+
+  /** 密码策略（2026-09 统一）：至少 8 位且同时包含字母和数字。 */
+  private static void validatePassword(String password) {
+    boolean strong =
+        password != null
+            && password.length() >= 8
+            && password.chars().anyMatch(Character::isLetter)
+            && password.chars().anyMatch(Character::isDigit);
+    if (!strong) {
+      throw new BaseException("WEAK_PASSWORD", HttpStatus.BAD_REQUEST, "密码至少 8 位且包含字母和数字");
+    }
   }
 
   /**
@@ -204,9 +222,7 @@ public class UserService {
     if (oldPassword == null || !passwordEncoder.matches(oldPassword, u.getPasswordHash())) {
       throw new BaseException("OLD_PASSWORD_MISMATCH", HttpStatus.BAD_REQUEST, "原密码不正确");
     }
-    if (newPassword == null || newPassword.length() < 6) {
-      throw new BaseException("INVALID_PASSWORD", HttpStatus.BAD_REQUEST, "新密码至少 6 位");
-    }
+    validatePassword(newPassword);
     u.setPasswordHash(passwordEncoder.encode(newPassword));
     repo.save(u);
   }

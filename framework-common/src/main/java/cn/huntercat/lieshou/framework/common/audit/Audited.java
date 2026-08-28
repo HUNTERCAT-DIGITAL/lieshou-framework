@@ -27,4 +27,11 @@ public @interface Audited {
 
   /** 资源类型（approval / user / customer …） */
   String resource();
+
+  /**
+   * 资源 ID（SpEL，方法参数可用 {@code #id} / {@code #p0} … 引用；默认按参数名或位置绑定）。
+   *
+   * <p>留空时切面回退：取第一个数值类型参数作为 resourceId（约定方法第一个参数为资源 id）； 仍取不到则为 null。
+   */
+  String resourceId() default "";
 }

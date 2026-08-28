@@ -1,5 +1,6 @@
 package cn.huntercat.lieshou.framework.auth;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,6 +18,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -222,5 +224,20 @@ class AuthServiceTest {
     when(userClient.tenantOptions("admin")).thenThrow(new RuntimeException("connect timeout"));
 
     assertThat(authService.tenantOptions("admin")).isEmpty();
+  }
+
+  /** 验证码登录：业务否定（BaseException INVALID_CODE）→ 透传错误码，不是 503 */
+  @Test
+  void loginWithCode_businessRejection_passesThroughErrorCode() {
+    doThrow(new BaseException("INVALID_CODE", HttpStatus.BAD_REQUEST, "验证码错误"))
+        .when(userClient)
+        .verifyVerificationCode(any());
+
+    assertThatThrownBy(
+            () ->
+                authService.loginWithCode(
+                    new LoginWithCodeRequest("huntercat", "SMS", "13800000000", "123456")))
+        .isInstanceOf(BadCredentialsException.class)
+        .hasMessageContaining("INVALID_CODE");
   }
 }

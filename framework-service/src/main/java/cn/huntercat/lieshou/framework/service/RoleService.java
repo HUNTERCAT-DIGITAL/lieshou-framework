@@ -57,9 +57,18 @@ public class RoleService {
       role.setDescription(description);
     }
     if (scope != null && !scope.isBlank()) {
-      role.setScope(Role.Scope.valueOf(scope));
+      role.setScope(parseEnum(scope, Role.Scope.class, "INVALID_SCOPE", "角色作用域不合法"));
     }
     return repo.save(role);
+  }
+
+  private static <E extends Enum<E>> E parseEnum(
+      String value, Class<E> type, String errorCode, String message) {
+    try {
+      return Enum.valueOf(type, value);
+    } catch (IllegalArgumentException e) {
+      throw new BaseException(errorCode, HttpStatus.BAD_REQUEST, message);
+    }
   }
 
   /** 删除自定义角色；system 角色不可删。 */

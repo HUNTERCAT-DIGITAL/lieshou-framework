@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>cn.huntercat</groupId>
-    <artifactId>lieShou-framework</artifactId>
+    <artifactId>lieshou-framework</artifactId>
     <version>0.1.0</version>
   </parent>
 

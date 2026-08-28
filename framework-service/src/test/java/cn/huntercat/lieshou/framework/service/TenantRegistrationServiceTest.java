@@ -96,11 +96,11 @@ class TenantRegistrationServiceTest {
   }
 
   @Test
-  @DisplayName("密码 < 6 位 → 拒绝")
+  @DisplayName("密码 < 8 位或缺少字母/数字 → 拒绝")
   void register_weakPassword_rejected() {
     assertThatThrownBy(() -> service.register("公司", "sampleco", "admin", "管理员", "123", null))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("密码至少 6 位");
+        .hasMessageContaining("密码至少 8 位且包含字母和数字");
   }
 
   @Test

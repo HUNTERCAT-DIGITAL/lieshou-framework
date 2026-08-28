@@ -6,6 +6,9 @@ import java.util.Map;
 /**
  * auth → user 本地调用契约（单体重组：原 Feign 接口去掉 {@code @FeignClient}， 由 {@link UserAuthAdapter} 直接调用 user 模块
  * Repository/Service）。
+ *
+ * <p><b>异常契约</b>：业务否定（验证码错误 / 发送太频繁 / 用户名占用等）必须抛 {@code BaseException}（带错误码）； 依赖故障（网络 / 超时 /
+ * 服务不可达）抛其他 RuntimeException。AuthService 依此区分： 前者透传错误码，后者映射 503 SERVICE_UNAVAILABLE（不再误报业务错误）。
  */
 public interface UserAuthPort {
 

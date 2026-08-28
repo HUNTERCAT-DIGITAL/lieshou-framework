@@ -30,6 +30,18 @@ class AuditedAspectTest {
     public void delete() {
       throw new IllegalStateException("boom");
     }
+
+    /** 无 resourceId 注解：回退取第一个数值参数 */
+    @Audited(action = "APPROVE", resource = "approval")
+    public String approveWithId(Long id) {
+      return "ok";
+    }
+
+    /** SpEL 指定资源 ID */
+    @Audited(action = "APPROVE", resource = "approval", resourceId = "#id")
+    public String approveSpel(Long id) {
+      return "ok";
+    }
   }
 
   private final List<AuditEvent> events = new ArrayList<>();
@@ -85,6 +97,22 @@ class AuditedAspectTest {
     assertThat(e.tenantId()).isEqualTo(7L);
     assertThat(e.userId()).isEqualTo(42L);
     assertThat(e.clientIp()).isEqualTo("10.0.0.9");
+  }
+
+  @Test
+  void resourceId_fallsBackToFirstNumericArg() {
+    proxy().approveWithId(77L);
+
+    assertThat(events).hasSize(1);
+    assertThat(events.get(0).resourceId()).isEqualTo(77L);
+  }
+
+  @Test
+  void resourceId_resolvedFromSpel() {
+    proxy().approveSpel(88L);
+
+    assertThat(events).hasSize(1);
+    assertThat(events.get(0).resourceId()).isEqualTo(88L);
   }
 
   @Test

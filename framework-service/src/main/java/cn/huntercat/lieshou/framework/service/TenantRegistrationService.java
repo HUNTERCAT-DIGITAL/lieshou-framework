@@ -74,8 +74,8 @@ public class TenantRegistrationService {
     if (displayName == null || displayName.isBlank()) {
       throw new IllegalArgumentException("管理员姓名不能为空");
     }
-    if (password == null || password.length() < 6) {
-      throw new IllegalArgumentException("密码至少 6 位");
+    if (!isStrongPassword(password)) {
+      throw new IllegalArgumentException("密码至少 8 位且包含字母和数字");
     }
 
     // —— 原子创建：租户 + 管理员 ——
@@ -97,5 +97,13 @@ public class TenantRegistrationService {
     users.save(admin);
 
     return new RegistrationResult(tenant, admin.getUsername(), admin.getDisplayName());
+  }
+
+  /** 密码策略（与 UserService.validatePassword 一致）：至少 8 位且同时包含字母和数字。 */
+  private static boolean isStrongPassword(String password) {
+    return password != null
+        && password.length() >= 8
+        && password.chars().anyMatch(Character::isLetter)
+        && password.chars().anyMatch(Character::isDigit);
   }
 }

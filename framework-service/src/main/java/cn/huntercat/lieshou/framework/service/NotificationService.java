@@ -1,12 +1,13 @@
 package cn.huntercat.lieshou.framework.service;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import cn.huntercat.lieshou.framework.domain.Notification;
 import cn.huntercat.lieshou.framework.domain.NotificationRepository;
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,19 +28,12 @@ public class NotificationService {
     this.repo = repo;
   }
 
-  /** 接收者通知列表（未读优先，新→旧，手动分页）。 */
+  /** 接收者通知列表（未读优先，新→旧，数据库分页）。 */
   @Transactional(readOnly = true)
   public List<Notification> list(Long tenantId, Long userId, int page, int size) {
     int cap = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
-    int skip = Math.max(page, 0) * cap;
-    return repo.findByTenantIdAndUserIdOrderByReadAtAscCreatedAtDesc(tenantId, userId).stream()
-        .sorted(
-            Comparator.comparing(
-                    Notification::getReadAt, Comparator.nullsFirst(Comparator.reverseOrder()))
-                .thenComparing(Notification::getCreatedAt, Comparator.reverseOrder()))
-        .skip(skip)
-        .limit(cap)
-        .toList();
+    Pageable pageable = PageRequest.of(Math.max(page, 0), cap);
+    return repo.findUnreadFirst(tenantId, userId, pageable).getContent();
   }
 
   /** 未读数量。 */

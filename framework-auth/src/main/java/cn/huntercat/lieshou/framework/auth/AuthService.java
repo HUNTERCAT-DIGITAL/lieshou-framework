@@ -120,11 +120,14 @@ public class AuthService {
   // Phase 8 · 认证体系扩展（ADR-0023）：验证码登录 / 注册 / 重置密码
   // ============================================================
 
-  /** 发送验证码（短信/邮箱）。端口异常带 cause 上抛，避免"发送失败"无根因。 */
+  /** 发送验证码（短信/邮箱）。业务否定（BaseException）透传错误码；依赖故障 → 503。 */
   public void sendCode(SendCodeRequest req) {
     try {
       userClient.sendVerificationCode(
           Map.of("channel", req.channel(), "target", req.target(), "purpose", req.purpose()));
+    } catch (BaseException e) {
+      // 业务否定（发送太频繁/参数非法）→ 透传错误码契约
+      throw new BadCredentialsException(e.errorCode(), e);
     } catch (RuntimeException e) {
       log.warn(
           "sendCode 失败 channel={} target={} purpose={}",
@@ -132,7 +135,7 @@ public class AuthService {
           req.target(),
           req.purpose(),
           e);
-      throw new BadCredentialsException("SEND_CODE_FAILED", e);
+      throw new BaseException(ErrorCode.SERVICE_UNAVAILABLE, UPSTREAM_UNAVAILABLE, e);
     }
   }
 
@@ -170,8 +173,11 @@ public class AuthService {
     Map<String, Object> created;
     try {
       created = userClient.createUser(createBody);
+    } catch (BaseException e) {
+      // 业务否定（用户名占用/密码弱等）→ 透传错误码
+      throw new BadCredentialsException(e.errorCode(), e);
     } catch (IllegalArgumentException e) {
-      // 业务参数否定（用户名占用/租户不存在等）→ 透传错误消息
+      // 兼容未使用 BaseException 的端口实现：透传消息
       throw new BadCredentialsException(
           e.getMessage() == null ? "REGISTER_FAILED" : e.getMessage(), e);
     } catch (RuntimeException e) {
@@ -210,20 +216,24 @@ public class AuthService {
     }
     try {
       userClient.updateUserPassword(user.id(), Map.of("password", req.newPassword()));
+    } catch (BaseException e) {
+      throw new BadCredentialsException(e.errorCode(), e);
     } catch (RuntimeException e) {
       log.warn("resetPassword: user-service 更新密码失败 userId={}", user.id(), e);
       throw new BaseException(ErrorCode.SERVICE_UNAVAILABLE, UPSTREAM_UNAVAILABLE, e);
     }
   }
 
-  /** 校验验证码（失败 → BadCredentialsException · 带根因便于排查，外观契约保持 INVALID_CODE） */
+  /** 校验验证码。业务否定（BaseException，如 INVALID_CODE）→ 透传错误码；依赖故障 → 503。 */
   private void verifyCode(String channel, String target, String purpose, String code) {
     try {
       userClient.verifyVerificationCode(
           Map.of("channel", channel, "target", target, "purpose", purpose, "code", code));
+    } catch (BaseException e) {
+      throw new BadCredentialsException(e.errorCode(), e);
     } catch (RuntimeException e) {
       log.warn("verifyCode 失败 channel={} target={} purpose={}", channel, target, purpose, e);
-      throw new BadCredentialsException("INVALID_CODE", e);
+      throw new BaseException(ErrorCode.SERVICE_UNAVAILABLE, UPSTREAM_UNAVAILABLE, e);
     }
   }
 

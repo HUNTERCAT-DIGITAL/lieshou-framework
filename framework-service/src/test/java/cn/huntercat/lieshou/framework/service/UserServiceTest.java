@@ -172,6 +172,16 @@ class UserServiceTest {
   }
 
   @Test
+  void update_未知角色抛INVALID_ROLE() {
+    when(repo.findById(1L)).thenReturn(Optional.of(user(1L, 7L, "u")));
+
+    assertThatThrownBy(
+            () -> service.update(1L, null, null, null, null, null, new String[] {"GHOST"}, null))
+        .isInstanceOf(BaseException.class)
+        .satisfies(e -> assertThat(((BaseException) e).errorCode()).isEqualTo("INVALID_ROLE"));
+  }
+
+  @Test
   void changePassword_旧密码正确则重新编码() {
     User u = user(1L, 7L, "u");
     u.setPasswordHash("hashed-old");
@@ -199,7 +209,7 @@ class UserServiceTest {
   }
 
   @Test
-  void changePassword_新密码过短抛INVALID_PASSWORD() {
+  void changePassword_新密码过短抛WEAK_PASSWORD() {
     User u = user(1L, 7L, "u");
     u.setPasswordHash("hashed-old");
     when(repo.findById(1L)).thenReturn(Optional.of(u));
@@ -207,7 +217,7 @@ class UserServiceTest {
 
     assertThatThrownBy(() -> service.changePassword(1L, "oldpass1", "123"))
         .isInstanceOf(BaseException.class)
-        .satisfies(e -> assertThat(((BaseException) e).errorCode()).isEqualTo("INVALID_PASSWORD"));
+        .satisfies(e -> assertThat(((BaseException) e).errorCode()).isEqualTo("WEAK_PASSWORD"));
   }
 
   @Test

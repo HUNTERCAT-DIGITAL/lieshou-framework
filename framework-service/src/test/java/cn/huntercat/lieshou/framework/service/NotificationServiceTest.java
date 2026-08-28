@@ -1,5 +1,9 @@
 package cn.huntercat.lieshou.framework.service;
 
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -42,10 +46,10 @@ class NotificationServiceTest {
     Notification n1 = notification(1L, false);
     Notification n2 = notification(2L, true);
     Notification n3 = notification(3L, false);
-    when(repo.findByTenantIdAndUserIdOrderByReadAtAscCreatedAtDesc(1L, 1L))
-        .thenReturn(List.of(n3, n2, n1));
+    // 排序已下推 SQL：repo 按未读优先 + 新→旧返回分页结果
+    when(repo.findUnreadFirst(eq(1L), eq(1L), any(Pageable.class)))
+        .thenReturn(new PageImpl<>(List.of(n3, n1), PageRequest.of(0, 2), 3));
 
-    // 未读(n1,n3)在前（按创建新→旧），已读(n2)在后；limit 2
     List<Notification> page = service.list(1L, 1L, 0, 2);
 
     assertThat(page).extracting(Notification::getTitle).containsExactly("通知3", "通知1");
