@@ -1,4 +1,4 @@
-package cn.huntercat.lieshou.framework.auth.service;
+package cn.huntercat.lieshou.framework.auth;
 
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -21,12 +21,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.huntercat.lieshou.framework.auth.AuthService;
-import cn.huntercat.lieshou.framework.auth.JwtService;
-import cn.huntercat.lieshou.framework.auth.UserAuthPort;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.LoginRequest;
+import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.LoginWithCodeRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.RegisterRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.TokenResponse;
+import cn.huntercat.lieshou.framework.common.api.BaseException;
+import cn.huntercat.lieshou.framework.common.api.ErrorCode;
 import cn.huntercat.lieshou.framework.common.dto.UserAuthView;
 import java.util.List;
 
@@ -164,5 +164,63 @@ class AuthServiceTest {
 
     // code 非空 → 验证码校验必须被调用
     verify(userClient).verifyVerificationCode(any());
+  }
+
+  // ============================================================
+  // 依赖故障 ≠ 业务否定：端口抛异常 = user-service 不可达 → 503，不误报业务错误
+  // ============================================================
+
+  /** 登录：user-service 网络故障 → SERVICE_UNAVAILABLE，而非 USER_NOT_FOUND */
+  @Test
+  void login_upstreamDown_throwsServiceUnavailable() {
+    when(userClient.findByTenantAndUsername("huntercat", "admin"))
+        .thenThrow(new RuntimeException("connect timeout"));
+
+    assertThatThrownBy(() -> authService.login(new LoginRequest("huntercat", "admin", "admin123")))
+        .isInstanceOf(BaseException.class)
+        .satisfies(
+            e ->
+                assertThat(((BaseException) e).errorCode())
+                    .isEqualTo(ErrorCode.SERVICE_UNAVAILABLE.name()));
+  }
+
+  /** 验证码登录：查用户时依赖故障 → 503，不吞成 USER_NOT_FOUND */
+  @Test
+  void loginWithCode_upstreamDown_throwsServiceUnavailable() {
+    when(userClient.findByPhone("13800000000")).thenThrow(new RuntimeException("connect timeout"));
+
+    assertThatThrownBy(
+            () ->
+                authService.loginWithCode(
+                    new LoginWithCodeRequest("huntercat", "SMS", "13800000000", "123456")))
+        .isInstanceOf(BaseException.class)
+        .satisfies(
+            e ->
+                assertThat(((BaseException) e).errorCode())
+                    .isEqualTo(ErrorCode.SERVICE_UNAVAILABLE.name()));
+  }
+
+  /** 注册：createUser 依赖故障 → 503，不吞成 REGISTER_FAILED */
+  @Test
+  void register_upstreamDown_throwsServiceUnavailable() {
+    when(userClient.createUser(any())).thenThrow(new RuntimeException("connect timeout"));
+
+    RegisterRequest req =
+        new RegisterRequest(
+            "huntercat", "u_new", "新用户", "pw123456", "SMS", "13800000000", null, null);
+    assertThatThrownBy(() -> authService.register(req))
+        .isInstanceOf(BaseException.class)
+        .satisfies(
+            e ->
+                assertThat(((BaseException) e).errorCode())
+                    .isEqualTo(ErrorCode.SERVICE_UNAVAILABLE.name()));
+  }
+
+  /** 租户选项：依赖故障降级空列表（前端回退默认租户），不抛错 */
+  @Test
+  void tenantOptions_upstreamDown_returnsEmptyList() {
+    when(userClient.tenantOptions("admin")).thenThrow(new RuntimeException("connect timeout"));
+
+    assertThat(authService.tenantOptions("admin")).isEmpty();
   }
 }

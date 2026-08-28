@@ -32,7 +32,10 @@ public enum ErrorCode {
   CONFLICT(HttpStatus.CONFLICT),
 
   /** 服务器内部错误（500 · 不向客户端泄露堆栈） */
-  INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR);
+  INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR),
+
+  /** 上游依赖不可用（user-service 网络故障等 · 503 · 与业务否定区分，避免误报） */
+  SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE);
 
   private final HttpStatus httpStatus;
 

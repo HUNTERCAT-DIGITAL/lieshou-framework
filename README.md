@@ -2,7 +2,7 @@
 
 > 猎手云产品线的**核心能力框架**（上游同源唯一）：认证 / JWT / 统一异常 / 审计 / 权限 / 领域模型 / 审批。
 > **lieshou-boot（单体）与 lieshou-cloud（微服务）共用的薄壳底座**——业务逻辑只在此维护，两端装配引用。
-> **v0.1.0（RELEASE）** · 六模块 · 57 测试全过
+> **v0.1.0（RELEASE）** · 六模块 · 106 测试全过
 
 <p align="center">
   <img src="https://img.shields.io/badge/Java-21-orange" alt="Java 21"/>

@@ -21,9 +21,23 @@ public class BaseException extends RuntimeException {
     this.httpStatus = httpStatus;
   }
 
+  /** 业务域特有错误码 + 根因（依赖故障时保留 cause，便于日志排查） */
+  public BaseException(String errorCode, HttpStatus httpStatus, String message, Throwable cause) {
+    super(message, cause);
+    this.errorCode = errorCode;
+    this.httpStatus = httpStatus;
+  }
+
   /** 通用错误码便捷构造 */
   public BaseException(ErrorCode code, String message) {
     this(code.name(), code.httpStatus(), message);
+  }
+
+  /** 通用错误码便捷构造 + 根因（依赖故障用） */
+  public BaseException(ErrorCode code, String message, Throwable cause) {
+    super(message, cause);
+    this.errorCode = code.name();
+    this.httpStatus = code.httpStatus();
   }
 
   public String errorCode() {

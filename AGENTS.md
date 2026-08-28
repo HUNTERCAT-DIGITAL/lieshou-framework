@@ -21,19 +21,25 @@
 - Commit：Conventional Commits；业务改动 → 发新版本 → 消费方 bump。
 
 ## 当前阶段
-- v0.1.0 已 RELEASE（六模块 · 57 测试全过，`mvn clean verify` 验证）。
+- v0.1.0 已 RELEASE（六模块 · 106 测试全过，`mvn clean verify` 验证）。
 - ADR-0044 上收进行中：阶段 1-3（角色/邀请码 → 租户 → 用户生命周期）已完成并入库；README 已同步。
 - 认证扩展（ADR-0023）：登录/验证码/注册/重置密码/切换租户/多租户选项已同源；默认租户可配置（`auth.default-tenant-code`，缺省 huntercat）。
 
 ## 待办
 - [ ] 规划 0.2.0 发版（v0.1.0 后已积压 ADR-0044 上收 + 认证扩展等大量未发版功能）
-- [ ] `CodeSender` 缺 dev 实现（javadoc 提到 DevCodeSender 但类不存在，消费方需自备实现，否则 VerificationService 启动失败）
+- [ ] `UserAuthPort` 动作类方法（sendVerificationCode/verifyVerificationCode 等）缺错误码契约——业务否定与依赖故障共用异常，前端外观已区分（INVALID_CODE 等），但彻底区分需端口层错误码设计
 - [ ] `AuditedAspect` 组装 AuditEvent 时 resourceId 恒为 null（半成品）
-- [ ] 测试包名不一致：`framework-auth` 测试在 `auth.service` 包（与主代码 `auth` 包不符）
 - [ ] `NotificationService.list` 全量拉取后内存分页（大数据量隐患）；Repository 排序与内存排序矛盾
+- [ ] `RoleService.update` 裸 `Role.Scope.valueOf` 抛 IllegalArgumentException（其他服务用 parseEnum 统一错误码，此处不一致）
+- [ ] `UserService.update` 未知角色码被静默丢弃（应报错）
+- [ ] 注册密码仅校验 ≥6 位（无复杂度要求）
+- [ ] artifactId `lieShou-framework` 驼峰命名与目录 `lieshou-framework` 不一致
 
 ## 关键决策
+- 2026-09: 依赖故障 ≠ 业务否定——`UserAuthPort` 返回 null = 不存在（业务否定），抛异常 = 上游不可用 → 503 `SERVICE_UNAVAILABLE`（不再误报 USER_NOT_FOUND）；动作类异常带 cause + warn 日志。
 - 2026-09: 默认租户编码可配置化（`auth.default-tenant-code`）——构造器注入 `@Value`（修复 @InjectMocks 回归：字段注入导致测试中为 null）。
+- 2026-09: 内置 `DevCodeSender`（@ConditionalOnMissingBean，与 LoggingAuditRecorder 同模式）——消费方不注册 CodeSender 时 VerificationService 也能启动。
+- 2026-09: 测试包名与主代码对齐（`framework.auth`），避免 surefire 残留旧编译产物跑旧测试。
 - 2026-08: ADR-0044 —— 两端 Controller 内联业务上收 framework-service（用户/租户/角色/邀请码/通知），薄壳只留 Controller + 装配。
 - 2026-08: ADR-0023/0022 —— 验证码登录/开放注册/邀请注册；多租户 JWT 带 tid/tcode；租户版别 Edition（GENERIC/LAYER/LEGALMIND/ZHIYE/JMZZ）。
 - 2026-08: 端口-适配器模式（UserAuthPort 等），单体本地实现 / 微服务 Feign 实现，业务只依赖端口。

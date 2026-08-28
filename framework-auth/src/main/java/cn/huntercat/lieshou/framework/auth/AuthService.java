@@ -6,6 +6,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.LoginRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.LoginWithCodeRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.RefreshRequest;
@@ -13,6 +16,8 @@ import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.RegisterRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.ResetPasswordRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.SendCodeRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.TokenResponse;
+import cn.huntercat.lieshou.framework.common.api.BaseException;
+import cn.huntercat.lieshou.framework.common.api.ErrorCode;
 import cn.huntercat.lieshou.framework.common.dto.UserAuthView;
 import io.jsonwebtoken.Claims;
 import java.util.List;
@@ -25,6 +30,11 @@ import java.util.Map;
  */
 @Service
 public class AuthService {
+
+  private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
+  /** 依赖故障统一文案（端口抛异常 = 上游不可用；返回 null = 业务否定，两者绝不混用） */
+  private static final String UPSTREAM_UNAVAILABLE = "用户服务暂不可用，请稍后重试";
 
   private final JwtService jwt;
   private final UserAuthPort userClient;
@@ -62,8 +72,10 @@ public class AuthService {
     UserAuthView user;
     try {
       user = userClient.findByTenantAndUsername(tenantCode, req.username());
-    } catch (Exception e) {
-      throw new UsernameNotFoundException("USER_NOT_FOUND: " + req.username());
+    } catch (RuntimeException e) {
+      // 端口抛异常 = user-service 不可达/故障，不是"用户不存在"——必须与业务否定区分
+      log.warn("login: user-service 查询失败 tenant={} username={}", tenantCode, req.username(), e);
+      throw new BaseException(ErrorCode.SERVICE_UNAVAILABLE, UPSTREAM_UNAVAILABLE, e);
     }
     if (user == null || user.passwordHash() == null) {
       throw new UsernameNotFoundException("USER_NOT_FOUND: " + req.username());
@@ -95,12 +107,12 @@ public class AuthService {
         tenantOptions(user.username()));
   }
 
-  /** 登录成功回写 last_login_at（失败静默，不影响登录主流程）. */
+  /** 登录成功回写 last_login_at（失败静默降级 + debug 日志，不影响登录主流程）. */
   private void markLastLogin(Long userId) {
     try {
       userClient.markLastLogin(userId);
-    } catch (Exception ignored) {
-      // 回写失败不阻断登录（user-service 暂不可达时降级）
+    } catch (RuntimeException e) {
+      log.debug("markLastLogin 回写失败（忽略） userId={}", userId, e);
     }
   }
 
@@ -108,13 +120,19 @@ public class AuthService {
   // Phase 8 · 认证体系扩展（ADR-0023）：验证码登录 / 注册 / 重置密码
   // ============================================================
 
-  /** 发送验证码（短信/邮箱） */
+  /** 发送验证码（短信/邮箱）。端口异常带 cause 上抛，避免"发送失败"无根因。 */
   public void sendCode(SendCodeRequest req) {
     try {
       userClient.sendVerificationCode(
           Map.of("channel", req.channel(), "target", req.target(), "purpose", req.purpose()));
-    } catch (Exception e) {
-      throw new BadCredentialsException("SEND_CODE_FAILED");
+    } catch (RuntimeException e) {
+      log.warn(
+          "sendCode 失败 channel={} target={} purpose={}",
+          req.channel(),
+          req.target(),
+          req.purpose(),
+          e);
+      throw new BadCredentialsException("SEND_CODE_FAILED", e);
     }
   }
 
@@ -153,10 +171,12 @@ public class AuthService {
     try {
       created = userClient.createUser(createBody);
     } catch (IllegalArgumentException e) {
+      // 业务参数否定（用户名占用/租户不存在等）→ 透传错误消息
       throw new BadCredentialsException(
-          e.getMessage() == null ? "REGISTER_FAILED" : e.getMessage());
-    } catch (Exception e) {
-      throw new BadCredentialsException("REGISTER_FAILED");
+          e.getMessage() == null ? "REGISTER_FAILED" : e.getMessage(), e);
+    } catch (RuntimeException e) {
+      log.warn("register: user-service 创建用户失败 username={}", req.username(), e);
+      throw new BaseException(ErrorCode.SERVICE_UNAVAILABLE, UPSTREAM_UNAVAILABLE, e);
     }
     Number uid = (Number) created.get("id");
     Number tid = (Number) created.get("tenantId");
@@ -190,30 +210,37 @@ public class AuthService {
     }
     try {
       userClient.updateUserPassword(user.id(), Map.of("password", req.newPassword()));
-    } catch (Exception e) {
-      throw new BadCredentialsException("RESET_FAILED");
+    } catch (RuntimeException e) {
+      log.warn("resetPassword: user-service 更新密码失败 userId={}", user.id(), e);
+      throw new BaseException(ErrorCode.SERVICE_UNAVAILABLE, UPSTREAM_UNAVAILABLE, e);
     }
   }
 
-  /** 校验验证码（失败 → BadCredentialsException） */
+  /** 校验验证码（失败 → BadCredentialsException · 带根因便于排查，外观契约保持 INVALID_CODE） */
   private void verifyCode(String channel, String target, String purpose, String code) {
     try {
       userClient.verifyVerificationCode(
           Map.of("channel", channel, "target", target, "purpose", purpose, "code", code));
-    } catch (Exception e) {
-      throw new BadCredentialsException("INVALID_CODE");
+    } catch (RuntimeException e) {
+      log.warn("verifyCode 失败 channel={} target={} purpose={}", channel, target, purpose, e);
+      throw new BadCredentialsException("INVALID_CODE", e);
     }
   }
 
-  /** 按渠道查用户（SMS→phone / EMAIL→email） */
+  /**
+   * 按渠道查用户（SMS→phone / EMAIL→email）。
+   *
+   * <p>端口返回 null = 用户不存在（业务否定）；抛异常 = user-service 故障 → 503，不吞成 null。
+   */
   private UserAuthView findUserByTarget(String channel, String target) {
     try {
       if ("SMS".equals(channel)) {
         return userClient.findByPhone(target);
       }
       return userClient.findByEmail(target);
-    } catch (Exception e) {
-      return null;
+    } catch (RuntimeException e) {
+      log.warn("findUserByTarget 查询失败 channel={} target={}", channel, target, e);
+      throw new BaseException(ErrorCode.SERVICE_UNAVAILABLE, UPSTREAM_UNAVAILABLE, e);
     }
   }
 
@@ -289,12 +316,13 @@ public class AuthService {
         "roles", claims.get("roles", List.class));
   }
 
-  /** 按用户名查可登录租户选项（多租户登录前 · tenant-options 端点） */
+  /** 按用户名查可登录租户选项（多租户登录前 · tenant-options 端点）。故障降级空列表 + warn 日志。 */
   public java.util.List<java.util.Map<String, Object>> tenantOptions(String username) {
     try {
       return userClient.tenantOptions(username);
-    } catch (Exception e) {
-      // 服务不可达/查询失败 → 空列表，前端回退默认租户登录
+    } catch (RuntimeException e) {
+      // 服务不可达/查询失败 → 空列表，前端回退默认租户登录（降级设计，记日志便于观察）
+      log.warn("tenantOptions 查询失败，回退空列表 username={}", username, e);
       return java.util.List.of();
     }
   }
@@ -313,8 +341,9 @@ public class AuthService {
     UserAuthView user;
     try {
       user = userClient.findByTenantAndUsername(tcode, username);
-    } catch (Exception e) {
-      throw new UsernameNotFoundException("USER_NOT_FOUND: " + username);
+    } catch (RuntimeException e) {
+      log.warn("switchTenant: user-service 查询失败 tenant={} username={}", tcode, username, e);
+      throw new BaseException(ErrorCode.SERVICE_UNAVAILABLE, UPSTREAM_UNAVAILABLE, e);
     }
     if (user == null || user.id() == null) {
       throw new UsernameNotFoundException("USER_NOT_FOUND: " + username);
