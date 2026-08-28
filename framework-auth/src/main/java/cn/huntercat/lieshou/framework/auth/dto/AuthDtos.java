@@ -77,7 +77,8 @@ public final class AuthDtos {
       @Schema(description = "Password") @NotBlank String password,
       @Schema(description = "Channel: SMS | EMAIL") @NotBlank String channel,
       @Schema(description = "Phone or email") @NotBlank String target,
-      @Schema(description = "6-digit code") @NotBlank String code,
+      @Schema(description = "6-digit code (optional; blank skips verification for open registration)")
+          String code,
       @Schema(
               description =
                   "Invite code (optional; auto-joins tenant with invite role · ADR-0023 P2)",

@@ -122,9 +122,12 @@ public class AuthService {
     return issueTokens(user, req.tenantCode());
   }
 
-  /** 注册（验证码）→ 创建用户 → 注册即登录 */
+  /** 注册（验证码可选）→ 创建用户 → 注册即登录 */
   public TokenResponse register(RegisterRequest req) {
-    verifyCode(req.channel(), req.target(), "REGISTER", req.code());
+    // 简化注册：code 为空时跳过验证码校验（开放注册 · 2026-08）；非空仍校验（兼容验证码流程）
+    if (req.code() != null && !req.code().isBlank()) {
+      verifyCode(req.channel(), req.target(), "REGISTER", req.code());
+    }
     Map<String, String> createBody = new java.util.HashMap<>();
     createBody.put("username", req.username());
     createBody.put("displayName", req.displayName());
