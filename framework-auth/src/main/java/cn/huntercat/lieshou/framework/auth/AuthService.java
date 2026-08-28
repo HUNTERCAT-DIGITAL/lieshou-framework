@@ -1,5 +1,6 @@
 package cn.huntercat.lieshou.framework.auth;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,8 +26,12 @@ import java.util.Map;
 @Service
 public class AuthService {
 
-  /** 默认租户编码（未传 tenantCode 时） · ADR-0022 */
-  private static final String DEFAULT_TENANT_CODE = "huntercat";
+  /**
+   * 默认租户编码（未传 tenantCode 时） · ADR-0022 · 可配置（auth.default-tenant-code），
+   * 缺省 huntercat（平台主租户）；客户栈（如 haizan）通过配置覆盖。
+   */
+  @Value("${auth.default-tenant-code:huntercat}")
+  private String defaultTenantCode;
 
   private final JwtService jwt;
   private final UserAuthPort userClient;
@@ -51,7 +56,7 @@ public class AuthService {
   public TokenResponse login(LoginRequest req) {
     String tenantCode =
         (req.tenantCode() == null || req.tenantCode().isBlank())
-            ? DEFAULT_TENANT_CODE
+            ? defaultTenantCode
             : req.tenantCode();
     UserAuthView user;
     try {
@@ -137,7 +142,7 @@ public class AuthService {
       createBody.put("inviteCode", req.inviteCode());
     } else {
       createBody.put(
-          "tenantCode", req.tenantCode() == null ? DEFAULT_TENANT_CODE : req.tenantCode());
+          "tenantCode", req.tenantCode() == null ? defaultTenantCode : req.tenantCode());
     }
     if ("SMS".equals(req.channel())) {
       createBody.put("phone", req.target());
@@ -155,7 +160,7 @@ public class AuthService {
     }
     Number uid = (Number) created.get("id");
     Number tid = (Number) created.get("tenantId");
-    String tcode = (String) created.getOrDefault("tenantCode", DEFAULT_TENANT_CODE);
+    String tcode = (String) created.getOrDefault("tenantCode", defaultTenantCode);
     String tname = (String) created.get("tenantName");
     String tedition = (String) created.getOrDefault("tenantEdition", "GENERIC");
     return new TokenResponse(
@@ -216,7 +221,7 @@ public class AuthService {
   private TokenResponse issueTokens(UserAuthView user, String tenantCode) {
     String tcode =
         (tenantCode == null || tenantCode.isBlank())
-            ? (user.tenantCode() == null ? DEFAULT_TENANT_CODE : user.tenantCode())
+            ? (user.tenantCode() == null ? defaultTenantCode : user.tenantCode())
             : tenantCode;
     List<String> roles =
         user.roles() == null || user.roles().isEmpty() ? List.of("USER") : user.roles();
@@ -304,7 +309,7 @@ public class AuthService {
       throw new BadCredentialsException("WRONG_TOKEN_TYPE");
     }
     String username = c.getSubject();
-    String tcode = (tenantCode == null || tenantCode.isBlank()) ? DEFAULT_TENANT_CODE : tenantCode;
+    String tcode = (tenantCode == null || tenantCode.isBlank()) ? defaultTenantCode : tenantCode;
     UserAuthView user;
     try {
       user = userClient.findByTenantAndUsername(tcode, username);
