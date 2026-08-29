@@ -33,6 +33,13 @@ public class BaseException extends RuntimeException {
     return new BaseException(code.name(), code.httpStatus(), i18nKey, i18nArgs);
   }
 
+  /** 通用错误码 + i18n key + 参数 + 根因（内部异常包装场景，保留 cause 供日志排查） */
+  public static BaseException i18n(ErrorCode code, String i18nKey, Throwable cause, Object... i18nArgs) {
+    BaseException e = new BaseException(code.name(), code.httpStatus(), i18nKey, i18nArgs);
+    e.initCause(cause);
+    return e;
+  }
+
   /** 业务域特有错误码（如 ALREADY_DECIDED / INSUFFICIENT_STOCK）—— message 直接透传（旧用法） */
   public BaseException(String errorCode, HttpStatus httpStatus, String message) {
     super(message);
