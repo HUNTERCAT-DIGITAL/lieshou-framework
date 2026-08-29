@@ -25,6 +25,7 @@
     <module>framework-service</module>
     <module>framework-approval</module>
     <module>framework-auth</module>
+    <module>framework-i18n</module>
   </modules>
 
   <properties>

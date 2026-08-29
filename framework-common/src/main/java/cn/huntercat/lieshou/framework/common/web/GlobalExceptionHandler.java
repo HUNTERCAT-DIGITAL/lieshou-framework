@@ -15,8 +15,10 @@ import org.slf4j.LoggerFactory;
 
 import cn.huntercat.lieshou.framework.common.api.BaseException;
 import cn.huntercat.lieshou.framework.common.api.ErrorCode;
+import cn.huntercat.lieshou.framework.i18n.I18nMessages;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import org.springframework.beans.factory.ObjectProvider;
 
 /**
  * 全局异常处理器（L2-1 · Bottom-Up）.
@@ -29,18 +31,32 @@ import java.util.NoSuchElementException;
  * VALIDATION_FAILED}；JDK 语义异常 （NoSuchElement/IllegalState/IllegalArgument）→ 404/409/400；兜底 → 500
  * （仅记日志，不向客户端泄露堆栈）。
  *
- * <p>替代各服务自维护的 {@code *ExceptionHandler}（approval / crm / finance / inventory / iot），业务服务只需依赖
- * {@code lieshoucloud-common} 并继承 {@link BaseException}。
+ * <p>多语言（S5）：{@link BaseException} 携带 i18nKey 时，message 由 {@link I18nMessages} 按请求 Locale 本地化；
+ * 容器未装配 framework-i18n（ObjectProvider 降级）或 i18nKey 为 null（旧用法）时原样透传。
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
   private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+  private final ObjectProvider<I18nMessages> i18nProvider;
+
+  public GlobalExceptionHandler(ObjectProvider<I18nMessages> i18nProvider) {
+    this.i18nProvider = i18nProvider;
+  }
+
   /** 业务异常：码与状态由异常自带（保持契约码稳定，如 ALREADY_DECIDED / INSUFFICIENT_STOCK） */
   @ExceptionHandler(BaseException.class)
   public ResponseEntity<Map<String, String>> onBaseException(BaseException e) {
-    return body(e.httpStatus(), e.errorCode(), e.getMessage());
+    String message = resolveMessage(e);
+    return body(e.httpStatus(), e.errorCode(), message);
+  }
+
+  /** i18n key → 本地化文案；无 key / 未装配 i18n → 透传原始 message */
+  private String resolveMessage(BaseException e) {
+    if (e.i18nKey() == null) return e.getMessage();
+    I18nMessages i18n = i18nProvider.getIfAvailable();
+    return i18n != null ? i18n.get(e.i18nKey(), e.i18nArgs()) : e.i18nKey();
   }
 
   /**
