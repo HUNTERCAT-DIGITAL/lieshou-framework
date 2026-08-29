@@ -40,14 +40,14 @@ public class AuthService {
   private final UserAuthPort userClient;
   private final PasswordEncoder passwordEncoder;
 
-  /** 默认租户编码（未传 tenantCode 时） · ADR-0022 · 可配置（auth.default-tenant-code），缺省 huntercat。 */
+  /** 默认租户编码（未传 tenantCode 时） · 全局统一 default（2026-08-29 决策：无特别说明的默认租户均为 default） · 可配置（auth.default-tenant-code） */
   private final String defaultTenantCode;
 
   public AuthService(
       JwtService jwt,
       UserAuthPort userClient,
       PasswordEncoder passwordEncoder,
-      @Value("${auth.default-tenant-code:huntercat}") String defaultTenantCode) {
+      @Value("${auth.default-tenant-code:default}") String defaultTenantCode) {
     this.jwt = jwt;
     this.userClient = userClient;
     this.passwordEncoder = passwordEncoder;

@@ -11,7 +11,7 @@ public final class AuthDtos {
 
   @Schema(description = "Login request body")
   public record LoginRequest(
-      @Schema(description = "Tenant code (default huntercat)", example = "huntercat")
+      @Schema(description = "Tenant code (default default)", example = "default")
           String tenantCode,
       @Schema(description = "Username", example = "futurewl") @NotBlank String username,
       @Schema(
@@ -32,7 +32,7 @@ public final class AuthDtos {
       @Schema(description = "Token type", example = "Bearer") String tokenType,
       @Schema(description = "User id (uid claim)") Long userId,
       @Schema(description = "Username (sub claim)") String username,
-      @Schema(description = "Tenant code (tcode claim)", example = "huntercat") String tenantCode,
+      @Schema(description = "Tenant code (tcode claim)", example = "default") String tenantCode,
       @Schema(description = "Tenant display name", example = "南昌猎手猫数字科技有限公司") String tenantName,
       @Schema(
               description =
@@ -63,14 +63,14 @@ public final class AuthDtos {
 
   @Schema(description = "Code login request (SMS/EMAIL verification code)")
   public record LoginWithCodeRequest(
-      @Schema(description = "Tenant code", example = "huntercat") String tenantCode,
+      @Schema(description = "Tenant code", example = "default") String tenantCode,
       @Schema(description = "Channel: SMS | EMAIL", example = "SMS") @NotBlank String channel,
       @Schema(description = "Phone or email", example = "13800000000") @NotBlank String target,
       @Schema(description = "6-digit code", example = "123456") @NotBlank String code) {}
 
   @Schema(description = "Self/invited registration request")
   public record RegisterRequest(
-      @Schema(description = "Tenant code (ignored when inviteCode present)", example = "huntercat")
+      @Schema(description = "Tenant code (ignored when inviteCode present)", example = "default")
           String tenantCode,
       @Schema(description = "Login username") @NotBlank String username,
       @Schema(description = "Display name") @NotBlank String displayName,
