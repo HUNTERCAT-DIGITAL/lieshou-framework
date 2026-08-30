@@ -12,4 +12,17 @@ public interface CodeSender {
 
   /** 发送验证码（target = 手机号或邮箱） */
   void send(VerificationCode.Channel channel, String target, String code);
+
+  /**
+   * 发送验证码（带用途，便于消费方按 purpose 选模板/渠道，如登录验证码 vs 改密验证码）。
+   *
+   * <p>默认转发到旧方法（向后兼容）；需要区分用途的消费方重写本方法。
+   */
+  default void send(
+      VerificationCode.Channel channel,
+      String target,
+      String code,
+      VerificationCode.Purpose purpose) {
+    send(channel, target, code);
+  }
 }

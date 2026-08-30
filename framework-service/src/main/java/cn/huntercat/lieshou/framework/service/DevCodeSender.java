@@ -28,4 +28,18 @@ public class DevCodeSender implements CodeSender {
         target,
         code);
   }
+
+  @Override
+  public void send(
+      VerificationCode.Channel channel,
+      String target,
+      String code,
+      VerificationCode.Purpose purpose) {
+    log.info(
+        "验证码发送（dev 默认实现）：channel={} target={} code={} purpose={} —— 生产环境请注册 CodeSender bean 覆盖",
+        channel,
+        target,
+        code,
+        purpose);
+  }
 }

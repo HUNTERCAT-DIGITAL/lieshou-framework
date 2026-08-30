@@ -47,7 +47,7 @@ public class VerificationService {
     VerificationCode vc =
         new VerificationCode(channel, target, purpose, code, Instant.now().plus(TTL));
     repo.save(vc);
-    sender.send(channel, target, code);
+    sender.send(channel, target, code, purpose);
   }
 
   /**
