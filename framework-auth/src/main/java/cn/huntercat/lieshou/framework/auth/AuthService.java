@@ -126,8 +126,9 @@ public class AuthService {
       userClient.sendVerificationCode(
           Map.of("channel", req.channel(), "target", req.target(), "purpose", req.purpose()));
     } catch (BaseException e) {
-      // 业务否定（发送太频繁/参数非法）→ 透传错误码契约
-      throw new BadCredentialsException(e.errorCode(), e);
+      // 业务否定（发送太频繁/参数非法）→ 直接透传（GlobalExceptionHandler 按 errorCode + httpStatus 处理，
+      // 如 SEND_TOO_FREQUENT → 400），而非转 BadCredentialsException（会被误报成 401 INVALID_CREDENTIALS）
+      throw e;
     } catch (RuntimeException e) {
       log.warn(
           "sendCode 失败 channel={} target={} purpose={}",
