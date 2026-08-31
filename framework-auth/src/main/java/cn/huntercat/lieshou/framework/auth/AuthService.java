@@ -3,7 +3,6 @@ package cn.huntercat.lieshou.framework.auth;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -66,8 +65,7 @@ public class AuthService {
    *
    * <p>Phase 8（ADR-0022）: 按租户鉴权，JWT 带 tid/tcode.
    *
-   * @throws UsernameNotFoundException 用户不存在
-   * @throws BadCredentialsException 密码错误或账户被禁用/锁定
+   * @throws BaseException 用户不存在 / 密码错误 / 账户被禁用或锁定（i18n 本地化）
    */
   public TokenResponse login(LoginRequest req) {
     String tenantCode =
@@ -76,15 +74,22 @@ public class AuthService {
             : req.tenantCode().trim();
     UserAuthView user = findUserForLogin(req, tenantCode);
     if (user == null || user.passwordHash() == null) {
-      throw new UsernameNotFoundException("USER_NOT_FOUND: " + req.username());
+      throw BaseException.i18n(
+          "USER_NOT_FOUND", HttpStatus.NOT_FOUND, "error.auth.user_not_found", req.username());
     }
     if (!passwordEncoder.matches(req.password(), user.passwordHash())) {
-      throw new BadCredentialsException("INVALID_CREDENTIALS");
+      throw BaseException.i18n(
+          "INVALID_CREDENTIALS", HttpStatus.UNAUTHORIZED, "error.auth.invalid_credentials");
     }
     // Phase 6: 账户状态校验（null 兜底 ACTIVE，兼容旧 user-service）
     String status = user.status() == null ? "ACTIVE" : user.status();
     if (!"ACTIVE".equals(status)) {
-      throw new BadCredentialsException("ACCOUNT_" + status);
+      String code = "ACCOUNT_" + status;
+      String i18nKey =
+          "DISABLED".equals(status)
+              ? "error.auth.account_disabled"
+              : "error.auth.account_locked";
+      throw BaseException.i18n(code, HttpStatus.FORBIDDEN, i18nKey);
     }
     List<String> roles =
         user.roles() == null || user.roles().isEmpty() ? List.of("USER") : user.roles();
@@ -192,7 +197,8 @@ public class AuthService {
     verifyCode(req.channel(), req.target(), "LOGIN", req.code());
     UserAuthView user = findUserByTarget(req.tenantCode(), req.channel(), req.target());
     if (user == null || user.id() == null) {
-      throw new UsernameNotFoundException("USER_NOT_FOUND: " + req.target());
+      throw BaseException.i18n(
+          "USER_NOT_FOUND", HttpStatus.NOT_FOUND, "error.auth.user_not_found", req.target());
     }
     return issueTokens(user, req.tenantCode());
   }
@@ -278,7 +284,8 @@ public class AuthService {
     // 重新查完整用户(含租户名/版别) → 签发 tokens
     UserAuthView user = userClient.findByTenantAndUsername(tenantCode, username);
     if (user == null || user.id() == null) {
-      throw new UsernameNotFoundException("USER_NOT_FOUND: " + username);
+      throw BaseException.i18n(
+          "USER_NOT_FOUND", HttpStatus.NOT_FOUND, "error.auth.user_not_found", username);
     }
     return issueTokens(user, tenantCode);
   }
@@ -288,7 +295,8 @@ public class AuthService {
     verifyCode(req.channel(), req.target(), "RESET_PASSWORD", req.code());
     UserAuthView user = findUserByTarget(req.tenantCode(), req.channel(), req.target());
     if (user == null || user.id() == null) {
-      throw new UsernameNotFoundException("USER_NOT_FOUND: " + req.target());
+      throw BaseException.i18n(
+          "USER_NOT_FOUND", HttpStatus.NOT_FOUND, "error.auth.user_not_found", req.target());
     }
     try {
       userClient.updateUserPassword(user.id(), Map.of("password", req.newPassword()));
@@ -436,11 +444,17 @@ public class AuthService {
       throw new BaseException(ErrorCode.SERVICE_UNAVAILABLE, UPSTREAM_UNAVAILABLE, e);
     }
     if (user == null || user.id() == null) {
-      throw new UsernameNotFoundException("USER_NOT_FOUND: " + username);
+      throw BaseException.i18n(
+          "USER_NOT_FOUND", HttpStatus.NOT_FOUND, "error.auth.user_not_found", username);
     }
     String status = user.status() == null ? "ACTIVE" : user.status();
     if (!"ACTIVE".equals(status)) {
-      throw new BadCredentialsException("ACCOUNT_" + status);
+      String code = "ACCOUNT_" + status;
+      String i18nKey =
+          "DISABLED".equals(status)
+              ? "error.auth.account_disabled"
+              : "error.auth.account_locked";
+      throw BaseException.i18n(code, HttpStatus.FORBIDDEN, i18nKey);
     }
     java.util.List<String> roles =
         user.roles() == null || user.roles().isEmpty() ? java.util.List.of("USER") : user.roles();

@@ -2,7 +2,6 @@ package cn.huntercat.lieshou.framework.auth;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -82,8 +81,12 @@ class AuthServiceTest {
     when(passwordEncoder.matches("wrong", "{bcrypt}hash")).thenReturn(false);
 
     assertThatThrownBy(() -> authService.login(new LoginRequest("huntercat", "admin", "wrong")))
-        .isInstanceOf(BadCredentialsException.class)
-        .hasMessageContaining("INVALID_CREDENTIALS");
+        .isInstanceOf(BaseException.class)
+        .satisfies(
+            e ->
+                assertThat(((BaseException) e).errorCode())
+                    .isEqualTo("INVALID_CREDENTIALS"))
+        .hasMessage("error.auth.invalid_credentials"); // i18n key（GlobalExceptionHandler 本地化）
   }
 
   @Test
@@ -91,8 +94,11 @@ class AuthServiceTest {
     when(userClient.findByTenantAndUsername("huntercat", "ghost")).thenReturn(null);
 
     assertThatThrownBy(() -> authService.login(new LoginRequest("huntercat", "ghost", "x")))
-        .isInstanceOf(UsernameNotFoundException.class)
-        .hasMessageContaining("USER_NOT_FOUND");
+        .isInstanceOf(BaseException.class)
+        .satisfies(
+            e ->
+                assertThat(((BaseException) e).errorCode()).isEqualTo("USER_NOT_FOUND"))
+        .hasMessage("error.auth.user_not_found");
   }
 
   @Test
@@ -101,8 +107,11 @@ class AuthServiceTest {
     when(passwordEncoder.matches("admin123", "{bcrypt}hash")).thenReturn(true);
 
     assertThatThrownBy(() -> authService.login(new LoginRequest("huntercat", "admin", "admin123")))
-        .isInstanceOf(BadCredentialsException.class)
-        .hasMessageContaining("ACCOUNT_DISABLED");
+        .isInstanceOf(BaseException.class)
+        .satisfies(
+            e ->
+                assertThat(((BaseException) e).errorCode()).isEqualTo("ACCOUNT_DISABLED"))
+        .hasMessage("error.auth.account_disabled");
   }
 
   @Test
@@ -147,8 +156,11 @@ class AuthServiceTest {
 
     assertThatThrownBy(
             () -> authService.login(new LoginRequest("huntercat", "13900000000", "x")))
-        .isInstanceOf(UsernameNotFoundException.class)
-        .hasMessageContaining("USER_NOT_FOUND");
+        .isInstanceOf(BaseException.class)
+        .satisfies(
+            e ->
+                assertThat(((BaseException) e).errorCode()).isEqualTo("USER_NOT_FOUND"))
+        .hasMessage("error.auth.user_not_found");
   }
 
   /** 手机号查询：user-service 故障 → 503，不吞成 USER_NOT_FOUND */
