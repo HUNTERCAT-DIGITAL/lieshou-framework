@@ -25,11 +25,8 @@ public final class AuthDtos {
   public record RefreshRequest(
       @Schema(description = "Refresh token from /login response") @NotBlank String refreshToken) {}
 
-  @Schema(description = "首次登录激活请求(管理员建用户未设密码,验证码激活并设置密码 · 2026-08)")
+  @Schema(description = "首次登录激活请求(管理员建用户未设密码 · 2026-08)")
   public record ActivateRequest(
-      @Schema(description = "Channel: SMS | EMAIL", example = "SMS") @NotBlank String channel,
-      @Schema(description = "手机号 / 邮箱", example = "13800000000") @NotBlank String target,
-      @Schema(description = "验证码(ACTIVATE)") @NotBlank String code,
       @Schema(description = "新密码(6-72)") @NotBlank @Size(min = 6, max = 72) String password) {}
 
   @Schema(description = "Token response (Phase 5: access + refresh + meta)")

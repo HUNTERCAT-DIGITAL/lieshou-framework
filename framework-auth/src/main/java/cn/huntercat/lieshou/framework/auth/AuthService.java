@@ -212,37 +212,30 @@ public class AuthService {
   }
 
   /**
-   * 首次登录激活（2026-08）：管理员建用户未设密码 → 验证码激活 + 设置密码 + 登录。
-   * 校验 ACTIVATE 验证码 → 按 phone/email 查用户 → 设密码 → 签发 tokens（activationRequired=false）。
+   * 首次登录激活（2026-08）：管理员建用户未设密码 → 登录后直接设置密码（token 即身份,无需再验证码）。
+   * 从 JWT claims 取用户 → 设密码 → 重新查完整用户 → 签发 tokens（activationRequired=false）。
    */
-  public TokenResponse activate(ActivateRequest req) {
-    verifyCode(req.channel(), req.target(), "ACTIVATE", req.code());
-    UserAuthView user = findUserByTarget(req.channel(), req.target());
-    if (user == null || user.id() == null) {
-      throw new UsernameNotFoundException("USER_NOT_FOUND: " + req.target());
+  public TokenResponse activate(Claims claims, ActivateRequest req) {
+    Long userId = claims.get("uid", Long.class);
+    String tenantCode = claims.get("tcode", String.class);
+    String username = claims.getSubject();
+    if (userId == null || username == null) {
+      throw new BadCredentialsException("INVALID_TOKEN");
     }
     try {
-      userClient.updateUserPassword(user.id(), Map.of("password", req.password()));
+      userClient.updateUserPassword(userId, Map.of("password", req.password()));
     } catch (BaseException e) {
       throw new BadCredentialsException(e.errorCode(), e);
     } catch (RuntimeException e) {
-      log.warn("activate: user-service 更新密码失败 userId={}", user.id(), e);
+      log.warn("activate: user-service 更新密码失败 userId={}", userId, e);
       throw new BaseException(ErrorCode.SERVICE_UNAVAILABLE, UPSTREAM_UNAVAILABLE, e);
     }
-    // 激活即登录(返回的 user 视图密码已更新,issueTokens 判定无需激活)
-    UserAuthView activated =
-        new UserAuthView(
-            user.id(),
-            user.tenantId(),
-            user.tenantCode(),
-            user.tenantName(),
-            user.tenantEdition(),
-            user.username(),
-            user.displayName(),
-            "set", // passwordHash 非空 → activationRequired=false
-            user.roles(),
-            user.status());
-    return issueTokens(activated, null);
+    // 重新查完整用户(含租户名/版别) → 签发 tokens
+    UserAuthView user = userClient.findByTenantAndUsername(tenantCode, username);
+    if (user == null || user.id() == null) {
+      throw new UsernameNotFoundException("USER_NOT_FOUND: " + username);
+    }
+    return issueTokens(user, tenantCode);
   }
 
   /** 忘记密码：校验 code → 按 phone/email 查用户 → 改密 */
