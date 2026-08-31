@@ -36,11 +36,23 @@ public class I18nMessages implements MessageSourceAware {
     return messageSource.getMessage(key, args, key, locale != null ? locale : Locale.SIMPLIFIED_CHINESE);
   }
 
-  /** 请求上下文存在时取 Accept-Language，否则默认中文（产品主语言） */
+  /**
+   * 请求上下文存在时取 Accept-Language（显式解析，避免无 header 时 Servlet 默认 JVM locale 干扰），
+   * 否则默认中文（产品主语言）。
+   */
   private Locale resolveLocale() {
     if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attrs) {
-      Locale locale = attrs.getRequest().getLocale();
-      if (locale != null) return locale;
+      String header = attrs.getRequest().getHeader("Accept-Language");
+      if (header != null && !header.isBlank()) {
+        // 取首个语言标签（如 "en-US,en;q=0.9" → en-US）；仅识别 zh-CN / en-US，其余回退默认中文
+        String tag = header.split(",")[0].trim();
+        if ("zh-CN".equalsIgnoreCase(tag) || tag.toLowerCase(java.util.Locale.ROOT).startsWith("zh")) {
+          return Locale.SIMPLIFIED_CHINESE;
+        }
+        if (tag.toLowerCase(java.util.Locale.ROOT).startsWith("en")) {
+          return Locale.US;
+        }
+      }
     }
     return Locale.SIMPLIFIED_CHINESE;
   }
