@@ -1,6 +1,7 @@
 package cn.huntercat.lieshou.framework.auth;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -56,7 +57,10 @@ public class AuthService {
   }
 
   /**
-   * 登录: tenantCode + username + password → access + refresh tokens.
+   * 登录: tenantCode + (username | phone) + password → access + refresh tokens.
+   *
+   * <p>支持账号或手机号密码登录（2026-09）: 先按租户+账号查，未命中回退按租户+手机号查（ADR-0022 多租户隔离，
+   * 手机号租户内唯一，避免全局 findByPhone 跨租户歧义）；手机号命中且请求未显式指定租户时以用户自身租户签发。
    *
    * <p>Phase 6: 校验账户 status（非 ACTIVE 拒绝登录）；登录成功回写 last_login_at.
    *
@@ -69,15 +73,8 @@ public class AuthService {
     String tenantCode =
         (req.tenantCode() == null || req.tenantCode().isBlank())
             ? defaultTenantCode
-            : req.tenantCode();
-    UserAuthView user;
-    try {
-      user = userClient.findByTenantAndUsername(tenantCode, req.username());
-    } catch (RuntimeException e) {
-      // 端口抛异常 = user-service 不可达/故障，不是"用户不存在"——必须与业务否定区分
-      log.warn("login: user-service 查询失败 tenant={} username={}", tenantCode, req.username(), e);
-      throw new BaseException(ErrorCode.SERVICE_UNAVAILABLE, UPSTREAM_UNAVAILABLE, e);
-    }
+            : req.tenantCode().trim();
+    UserAuthView user = findUserForLogin(req, tenantCode);
     if (user == null || user.passwordHash() == null) {
       throw new UsernameNotFoundException("USER_NOT_FOUND: " + req.username());
     }
@@ -91,8 +88,13 @@ public class AuthService {
     }
     List<String> roles =
         user.roles() == null || user.roles().isEmpty() ? List.of("USER") : user.roles();
+    // 手机号登录且未显式指定租户时，以手机号用户自身租户签发（与 issueTokens 语义一致）
+    String effTenant =
+        (req.tenantCode() == null || req.tenantCode().isBlank())
+            ? (user.tenantCode() == null ? tenantCode : user.tenantCode())
+            : tenantCode;
     String access =
-        jwt.generateAccessToken(user.id(), user.tenantId(), tenantCode, user.username(), roles);
+        jwt.generateAccessToken(user.id(), user.tenantId(), effTenant, user.username(), roles);
     String refresh = jwt.generateRefreshToken(user.id(), user.username());
     markLastLogin(user.id());
     return new TokenResponse(
@@ -102,11 +104,54 @@ public class AuthService {
         "Bearer",
         user.id(),
         user.username(),
-        tenantCode,
+        effTenant,
         user.tenantName(),
         user.tenantEdition(),
         user.passwordHash() == null || user.passwordHash().isBlank(),
         tenantOptions(user.username()));
+  }
+
+  /**
+   * 密码登录查用户: 优先按租户+账号，账号未命中回退按租户+手机号（ADR-0022 多租户隔离）。
+   *
+   * <p>业务否定（用户/手机号不存在 NOT_FOUND）返回 null；依赖故障（网络/超时）→ 503，不吞成业务否定。
+   */
+  private UserAuthView findUserForLogin(LoginRequest req, String tenantCode) {
+    UserAuthView user;
+    try {
+      user = userClient.findByTenantAndUsername(tenantCode, req.username());
+    } catch (BaseException e) {
+      if (isNotFound(e)) {
+        user = null; // 账号不存在（NOT_FOUND）→ 回退尝试手机号
+      } else {
+        throw e; // 其他业务否定（如 TENANT_DISABLED）透传错误码
+      }
+    } catch (RuntimeException e) {
+      log.warn("login: user-service 查询失败 tenant={} username={}", tenantCode, req.username(), e);
+      throw new BaseException(ErrorCode.SERVICE_UNAVAILABLE, UPSTREAM_UNAVAILABLE, e);
+    }
+    if (user != null) {
+      return user;
+    }
+    try {
+      // 手机号回退：租户维度查询（手机号租户内唯一，防跨租户歧义）
+      user = userClient.findByTenantAndPhone(tenantCode, req.username());
+    } catch (BaseException e) {
+      if (isNotFound(e)) {
+        return null; // 该租户下手机号不存在 → 用户不存在
+      }
+      throw e;
+    } catch (RuntimeException e) {
+      log.warn(
+          "login: user-service 手机号查询失败 tenant={} phone={}", tenantCode, req.username(), e);
+      throw new BaseException(ErrorCode.SERVICE_UNAVAILABLE, UPSTREAM_UNAVAILABLE, e);
+    }
+    return user;
+  }
+
+  private static boolean isNotFound(BaseException e) {
+    return "NOT_FOUND".equals(e.errorCode())
+        || (e.httpStatus() != null && e.httpStatus() == HttpStatus.NOT_FOUND);
   }
 
   /** 登录成功回写 last_login_at（失败静默降级 + debug 日志，不影响登录主流程）. */

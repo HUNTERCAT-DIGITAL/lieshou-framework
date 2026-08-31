@@ -117,6 +117,87 @@ class AuthServiceTest {
     assertThat(resp.accessToken()).isEqualTo("t");
   }
 
+  // ============================================================
+  // 手机号密码登录（2026-09）：账号未命中回退租户+手机号查询（ADR-0022 多租户隔离）
+  // ============================================================
+
+  /** 账号未命中 → 手机号密码登录成功（租户维度查询，手机号租户内唯一） */
+  @Test
+  void login_byPhone_returnsTokenWithUserTenant() {
+    when(userClient.findByTenantAndUsername("huntercat", "13800000000")).thenReturn(null);
+    when(userClient.findByTenantAndPhone("huntercat", "13800000000")).thenReturn(user("ACTIVE"));
+    when(passwordEncoder.matches("admin123", "{bcrypt}hash")).thenReturn(true);
+    when(jwt.generateAccessToken(1L, 1L, "huntercat", "admin", List.of("PLATFORM_ADMIN")))
+        .thenReturn("access-token");
+    when(jwt.generateRefreshToken(1L, "admin")).thenReturn("refresh-token");
+
+    var resp = authService.login(new LoginRequest("huntercat", "13800000000", "admin123"));
+
+    assertThat(resp.accessToken()).isEqualTo("access-token");
+    assertThat(resp.tenantCode()).isEqualTo("huntercat"); // 未显式指定 → 用户自身租户
+    verify(userClient).findByTenantAndPhone("huntercat", "13800000000");
+    verify(userClient).markLastLogin(1L);
+  }
+
+  /** 该租户下手机号不存在 → USER_NOT_FOUND（业务否定，不是 503） */
+  @Test
+  void login_byPhone_notFound_throwsUsernameNotFound() {
+    when(userClient.findByTenantAndUsername("huntercat", "13900000000")).thenReturn(null);
+    when(userClient.findByTenantAndPhone("huntercat", "13900000000")).thenReturn(null);
+
+    assertThatThrownBy(
+            () -> authService.login(new LoginRequest("huntercat", "13900000000", "x")))
+        .isInstanceOf(UsernameNotFoundException.class)
+        .hasMessageContaining("USER_NOT_FOUND");
+  }
+
+  /** 手机号查询：user-service 故障 → 503，不吞成 USER_NOT_FOUND */
+  @Test
+  void login_byPhone_upstreamDown_throwsServiceUnavailable() {
+    when(userClient.findByTenantAndUsername("huntercat", "13800000000")).thenReturn(null);
+    when(userClient.findByTenantAndPhone("huntercat", "13800000000"))
+        .thenThrow(new RuntimeException("connect timeout"));
+
+    assertThatThrownBy(
+            () -> authService.login(new LoginRequest("huntercat", "13800000000", "x")))
+        .isInstanceOf(BaseException.class)
+        .satisfies(
+            e ->
+                assertThat(((BaseException) e).errorCode())
+                    .isEqualTo(ErrorCode.SERVICE_UNAVAILABLE.name()));
+  }
+
+  /** 账号查询：user-service 返回 BaseException NOT_FOUND（Feign 404）→ 回退手机号，不是 503 */
+  @Test
+  void login_accountNotFound_baseException_fallsBackToPhone() {
+    when(userClient.findByTenantAndUsername("huntercat", "13800000000"))
+        .thenThrow(new BaseException(ErrorCode.NOT_FOUND, "用户不存在"));
+    when(userClient.findByTenantAndPhone("huntercat", "13800000000")).thenReturn(user("ACTIVE"));
+    when(passwordEncoder.matches("admin123", "{bcrypt}hash")).thenReturn(true);
+    when(jwt.generateAccessToken(1L, 1L, "huntercat", "admin", List.of("PLATFORM_ADMIN")))
+        .thenReturn("access-token");
+    when(jwt.generateRefreshToken(1L, "admin")).thenReturn("refresh-token");
+
+    var resp = authService.login(new LoginRequest("huntercat", "13800000000", "admin123"));
+
+    assertThat(resp.accessToken()).isEqualTo("access-token");
+    verify(userClient).findByTenantAndPhone("huntercat", "13800000000");
+  }
+
+  /** 账号命中 → 不查手机号（账号优先） */
+  @Test
+  void login_accountHit_doesNotQueryPhone() {
+    when(userClient.findByTenantAndUsername("huntercat", "admin")).thenReturn(user("ACTIVE"));
+    when(passwordEncoder.matches("admin123", "{bcrypt}hash")).thenReturn(true);
+    when(jwt.generateAccessToken(1L, 1L, "huntercat", "admin", List.of("PLATFORM_ADMIN")))
+        .thenReturn("access-token");
+    when(jwt.generateRefreshToken(1L, "admin")).thenReturn("refresh-token");
+
+    authService.login(new LoginRequest("huntercat", "admin", "admin123"));
+
+    verify(userClient, never()).findByTenantAndPhone(anyString(), anyString());
+  }
+
   /** 开放注册：code 为空时跳过验证码校验,直接创建用户并签发 token（2026-08） */
   @Test
   void register_codeBlank_skipsVerification() {
