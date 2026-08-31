@@ -50,7 +50,11 @@ class VerificationServiceTest {
     service.send(VerificationCode.Channel.SMS, "13800000000", VerificationCode.Purpose.LOGIN);
 
     verify(repo).save(any(VerificationCode.class));
-    verify(sender).send(eq(VerificationCode.Channel.SMS), eq("13800000000"), anyString());
+    verify(sender).send(
+        eq(VerificationCode.Channel.SMS),
+        eq("13800000000"),
+        anyString(),
+        eq(VerificationCode.Purpose.LOGIN));
   }
 
   @Test

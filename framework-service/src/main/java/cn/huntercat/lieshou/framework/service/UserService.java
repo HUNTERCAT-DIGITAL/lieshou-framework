@@ -120,6 +120,9 @@ public class UserService {
     if (repo.existsByTenantIdAndUsername(tenant.getId(), username)) {
       throw new BaseException("USERNAME_TAKEN", HttpStatus.BAD_REQUEST, "用户名已被占用");
     }
+    if (phone != null && !phone.isBlank() && repo.findByPhone(phone).isPresent()) {
+      throw new BaseException("PHONE_TAKEN", HttpStatus.BAD_REQUEST, "手机号已被其他账号注册");
+    }
     User u = new User();
     u.setTenantId(tenant.getId());
     u.setUsername(username);
