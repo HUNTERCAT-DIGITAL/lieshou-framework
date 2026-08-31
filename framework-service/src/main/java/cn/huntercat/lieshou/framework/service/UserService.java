@@ -73,7 +73,9 @@ public class UserService {
       String tenantCode,
       String inviteCode,
       Long forcedTenantId) {
-    validatePassword(password);
+    if (password != null && !password.isBlank()) {
+      validatePassword(password);
+    }
     Tenant tenant;
     String role = "USER";
     if (inviteCode != null && !inviteCode.isBlank()) {
@@ -124,7 +126,8 @@ public class UserService {
     u.setDisplayName(displayName);
     u.setEmail(email);
     u.setPhone(phone);
-    u.setPasswordHash(passwordEncoder.encode(password));
+    u.setPasswordHash(
+        password != null && !password.isBlank() ? passwordEncoder.encode(password) : null);
     u.setRoles(List.of(roleByCode(role)));
     User saved = repo.save(u);
     return new CreateResult(saved, tenant);
@@ -191,8 +194,11 @@ public class UserService {
       u.setRoles(newRoles);
     }
     if (password != null && !password.isBlank()) {
+      if (password != null && !password.isBlank()) {
       validatePassword(password);
-      u.setPasswordHash(passwordEncoder.encode(password));
+    }
+      u.setPasswordHash(
+        password != null && !password.isBlank() ? passwordEncoder.encode(password) : null);
     }
     return repo.save(u);
   }

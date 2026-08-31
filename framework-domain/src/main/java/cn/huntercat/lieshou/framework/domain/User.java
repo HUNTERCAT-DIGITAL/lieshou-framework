@@ -95,7 +95,7 @@ public class User {
   @Schema(description = "Phone (optional)", example = "13800000000")
   private String phone;
 
-  @Column(name = "password_hash", nullable = false, length = 100)
+  @Column(name = "password_hash", nullable = true, length = 100)  // nullable=true: 管理员建用户可不设密码(首次验证码激活设置)
   @Schema(
       description =
           "BCrypt hash; NEVER exposed via public endpoints. Use /api/users/auth/by-username for service-to-service.",

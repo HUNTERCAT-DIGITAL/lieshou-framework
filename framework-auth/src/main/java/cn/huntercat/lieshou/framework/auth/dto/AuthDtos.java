@@ -1,6 +1,7 @@
 package cn.huntercat.lieshou.framework.auth.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -24,6 +25,13 @@ public final class AuthDtos {
   public record RefreshRequest(
       @Schema(description = "Refresh token from /login response") @NotBlank String refreshToken) {}
 
+  @Schema(description = "首次登录激活请求(管理员建用户未设密码,验证码激活并设置密码 · 2026-08)")
+  public record ActivateRequest(
+      @Schema(description = "Channel: SMS | EMAIL", example = "SMS") @NotBlank String channel,
+      @Schema(description = "手机号 / 邮箱", example = "13800000000") @NotBlank String target,
+      @Schema(description = "验证码(ACTIVATE)") @NotBlank String code,
+      @Schema(description = "新密码(6-72)") @NotBlank @Size(min = 6, max = 72) String password) {}
+
   @Schema(description = "Token response (Phase 5: access + refresh + meta)")
   public record TokenResponse(
       @Schema(description = "JWT access token (Bearer)") String accessToken,
@@ -39,6 +47,8 @@ public final class AuthDtos {
                   "Tenant edition: GENERIC | LAYER | LEGALMIND | ZHIYE | JMZZ (ADR-0035/0036)",
               example = "GENERIC")
           String tenantEdition,
+      @Schema(description = "首次登录需激活(管理员建用户未设密码 · 2026-08)", example = "false")
+          boolean activationRequired,
       @Schema(
               description = "Available tenants for this username (多租户登录前选租户 · 8f0d60e)",
               example = "[]")

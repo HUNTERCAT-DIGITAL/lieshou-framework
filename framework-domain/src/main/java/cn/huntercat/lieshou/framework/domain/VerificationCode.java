@@ -31,7 +31,9 @@ public class VerificationCode {
   public enum Purpose {
     LOGIN,
     REGISTER,
-    RESET_PASSWORD
+    RESET_PASSWORD,
+    /** 首次登录激活(未设置密码的用户用验证码激活并设置密码 · 2026-08) */
+    ACTIVATE
   }
 
   @Id

@@ -14,6 +14,7 @@ import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.LoginWithCodeRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.RefreshRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.RegisterRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.ResetPasswordRequest;
+import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.ActivateRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.SendCodeRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.TokenResponse;
 import cn.huntercat.lieshou.framework.common.api.BaseException;
@@ -104,6 +105,7 @@ public class AuthService {
         tenantCode,
         user.tenantName(),
         user.tenantEdition(),
+        user.passwordHash() == null || user.passwordHash().isBlank(),
         tenantOptions(user.username()));
   }
 
@@ -205,7 +207,42 @@ public class AuthService {
         tcode,
         tname,
         tedition,
+        false, // register 自带密码,无需激活
         tenantOptions(req.username()));
+  }
+
+  /**
+   * 首次登录激活（2026-08）：管理员建用户未设密码 → 验证码激活 + 设置密码 + 登录。
+   * 校验 ACTIVATE 验证码 → 按 phone/email 查用户 → 设密码 → 签发 tokens（activationRequired=false）。
+   */
+  public TokenResponse activate(ActivateRequest req) {
+    verifyCode(req.channel(), req.target(), "ACTIVATE", req.code());
+    UserAuthView user = findUserByTarget(req.channel(), req.target());
+    if (user == null || user.id() == null) {
+      throw new UsernameNotFoundException("USER_NOT_FOUND: " + req.target());
+    }
+    try {
+      userClient.updateUserPassword(user.id(), Map.of("password", req.password()));
+    } catch (BaseException e) {
+      throw new BadCredentialsException(e.errorCode(), e);
+    } catch (RuntimeException e) {
+      log.warn("activate: user-service 更新密码失败 userId={}", user.id(), e);
+      throw new BaseException(ErrorCode.SERVICE_UNAVAILABLE, UPSTREAM_UNAVAILABLE, e);
+    }
+    // 激活即登录(返回的 user 视图密码已更新,issueTokens 判定无需激活)
+    UserAuthView activated =
+        new UserAuthView(
+            user.id(),
+            user.tenantId(),
+            user.tenantCode(),
+            user.tenantName(),
+            user.tenantEdition(),
+            user.username(),
+            user.displayName(),
+            "set", // passwordHash 非空 → activationRequired=false
+            user.roles(),
+            user.status());
+    return issueTokens(activated, null);
   }
 
   /** 忘记密码：校验 code → 按 phone/email 查用户 → 改密 */
@@ -267,6 +304,8 @@ public class AuthService {
         jwt.generateAccessToken(user.id(), user.tenantId(), tcode, user.username(), roles);
     String refresh = jwt.generateRefreshToken(user.id(), user.username());
     markLastLogin(user.id());
+    boolean activationRequired =
+        user.passwordHash() == null || user.passwordHash().isBlank();
     return new TokenResponse(
         access,
         refresh,
@@ -277,6 +316,7 @@ public class AuthService {
         tcode,
         user.tenantName(),
         user.tenantEdition(),
+        activationRequired,
         tenantOptions(user.username()));
   }
 
@@ -314,6 +354,7 @@ public class AuthService {
         tenantCode,
         null,
         null,
+        false, // switchTenant 是已登录用户,无需激活
         List.of());
   }
 
@@ -378,6 +419,7 @@ public class AuthService {
         tcode,
         user.tenantName(),
         user.tenantEdition(),
+        user.passwordHash() == null || user.passwordHash().isBlank(),
         tenantOptions(user.username()));
   }
 }
