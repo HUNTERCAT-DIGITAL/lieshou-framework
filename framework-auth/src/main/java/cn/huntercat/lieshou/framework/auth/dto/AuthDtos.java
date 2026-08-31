@@ -99,6 +99,7 @@ public final class AuthDtos {
 
   @Schema(description = "Reset password request (via code)")
   public record ResetPasswordRequest(
+      @Schema(description = "Tenant code(手机号租户内唯一需定位租户 · 2026-08)", example = "default") String tenantCode,
       @Schema(description = "Channel: SMS | EMAIL", example = "SMS") @NotBlank String channel,
       @Schema(description = "Phone or email", example = "13800000000") @NotBlank String target,
       @Schema(description = "6-digit code", example = "123456") @NotBlank String code,

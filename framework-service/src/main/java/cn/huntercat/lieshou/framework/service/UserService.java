@@ -267,10 +267,12 @@ public class UserService {
     return toAuthView(u, tenant);
   }
 
-  /** 认证视图（手机号）。 */
+  /** 认证视图（租户 + 手机号 · 2026-08 手机号租户内唯一）。 */
   @Transactional(readOnly = true)
-  public UserAuthView authViewByPhone(String phone) {
-    return repo.findByPhone(phone)
+  public UserAuthView authViewByTenantAndPhone(String tenantCode, String phone) {
+    return tenantRepo
+        .findByCode(tenantCode)
+        .flatMap(t -> repo.findByTenantIdAndPhone(t.getId(), phone))
         .map(this::toAuthViewWithTenant)
         .orElseThrow(() -> new BaseException(ErrorCode.NOT_FOUND, "用户不存在"));
   }

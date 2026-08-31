@@ -145,7 +145,7 @@ public class AuthService {
   /** 验证码登录：校验 code → 按 phone/email 查用户 → JWT */
   public TokenResponse loginWithCode(LoginWithCodeRequest req) {
     verifyCode(req.channel(), req.target(), "LOGIN", req.code());
-    UserAuthView user = findUserByTarget(req.channel(), req.target());
+    UserAuthView user = findUserByTarget(req.tenantCode(), req.channel(), req.target());
     if (user == null || user.id() == null) {
       throw new UsernameNotFoundException("USER_NOT_FOUND: " + req.target());
     }
@@ -241,7 +241,7 @@ public class AuthService {
   /** 忘记密码：校验 code → 按 phone/email 查用户 → 改密 */
   public void resetPassword(ResetPasswordRequest req) {
     verifyCode(req.channel(), req.target(), "RESET_PASSWORD", req.code());
-    UserAuthView user = findUserByTarget(req.channel(), req.target());
+    UserAuthView user = findUserByTarget(req.tenantCode(), req.channel(), req.target());
     if (user == null || user.id() == null) {
       throw new UsernameNotFoundException("USER_NOT_FOUND: " + req.target());
     }
@@ -273,10 +273,10 @@ public class AuthService {
    *
    * <p>端口返回 null = 用户不存在（业务否定）；抛异常 = user-service 故障 → 503，不吞成 null。
    */
-  private UserAuthView findUserByTarget(String channel, String target) {
+  private UserAuthView findUserByTarget(String tenantCode, String channel, String target) {
     try {
       if ("SMS".equals(channel)) {
-        return userClient.findByPhone(target);
+        return userClient.findByTenantAndPhone(tenantCode, target);
       }
       return userClient.findByEmail(target);
     } catch (RuntimeException e) {

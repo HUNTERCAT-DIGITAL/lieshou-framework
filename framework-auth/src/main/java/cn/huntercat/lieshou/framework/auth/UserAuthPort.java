@@ -24,8 +24,8 @@ public interface UserAuthPort {
   /** 校验验证码（一次性，校验后作废） */
   void verifyVerificationCode(Map<String, String> body);
 
-  /** 按手机号查鉴权视图 */
-  UserAuthView findByPhone(String phone);
+  /** 按租户 + 手机号查鉴权视图（手机号租户内唯一 · 2026-08） */
+  UserAuthView findByTenantAndPhone(String tenantCode, String phone);
 
   /** 按邮箱查鉴权视图 */
   UserAuthView findByEmail(String email);
