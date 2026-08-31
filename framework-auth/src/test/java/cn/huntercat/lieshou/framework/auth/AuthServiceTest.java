@@ -189,7 +189,7 @@ class AuthServiceTest {
   /** 验证码登录：查用户时依赖故障 → 503，不吞成 USER_NOT_FOUND */
   @Test
   void loginWithCode_upstreamDown_throwsServiceUnavailable() {
-    when(userClient.findByPhone("13800000000")).thenThrow(new RuntimeException("connect timeout"));
+    when(userClient.findByTenantAndPhone("huntercat", "13800000000")).thenThrow(new RuntimeException("connect timeout"));
 
     assertThatThrownBy(
             () ->
