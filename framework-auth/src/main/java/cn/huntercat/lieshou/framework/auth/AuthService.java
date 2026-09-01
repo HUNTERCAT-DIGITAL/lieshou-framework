@@ -406,12 +406,15 @@ public class AuthService {
 
   /** 给 AuthController.me 用：从已验证的 JWT Claims 提取用户信息. */
   public Map<String, Object> viewFromClaims(Claims claims) {
-    return Map.of(
-        "userId", claims.get("uid", Long.class),
-        "tenantId", claims.get("tid", Long.class),
-        "tenantCode", claims.get("tcode", String.class),
-        "username", claims.getSubject(),
-        "roles", claims.get("roles", List.class));
+    // HashMap：avatarUrl 可能为 null（JWT 未含头像 claim），Map.of 不允许 null 值
+    java.util.Map<String, Object> view = new java.util.HashMap<>();
+    view.put("userId", claims.get("uid", Long.class));
+    view.put("tenantId", claims.get("tid", Long.class));
+    view.put("tenantCode", claims.get("tcode", String.class));
+    view.put("username", claims.getSubject());
+    view.put("roles", claims.get("roles", List.class));
+    view.put("avatarUrl", claims.get("avatarUrl", String.class));
+    return view;
   }
 
   /** 按用户名查可登录租户选项（多租户登录前 · tenant-options 端点）。故障降级空列表 + warn 日志。 */
