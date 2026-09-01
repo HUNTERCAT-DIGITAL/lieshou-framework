@@ -297,6 +297,15 @@ public class UserService {
         .orElseThrow(() -> new BaseException(ErrorCode.NOT_FOUND, "用户不存在"));
   }
 
+  /** 认证视图（手机号 · 手机号租户内唯一，跨租户查首个；供验证码登录 service-to-service）。 */
+  @Transactional(readOnly = true)
+  public UserAuthView authViewByPhone(String phone) {
+    return repo.findAllByPhone(phone).stream()
+        .findFirst()
+        .map(this::toAuthViewWithTenant)
+        .orElseThrow(() -> new BaseException(ErrorCode.NOT_FOUND, "用户不存在"));
+  }
+
   /** 登录成功回写 lastLogin（幂等：不存在静默忽略）。 */
   @Transactional
   public void markLastLogin(Long id) {

@@ -19,6 +19,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
   /** 按手机号查（租户内唯一 · 2026-08 方案 B 调整：手机号按租户隔离） */
   Optional<User> findByPhone(String phone);
 
+  /** 全量按手机号查（authViewByPhone 跨租户首个 · 2026-09） */
+  List<User> findAllByPhone(String phone);
+
   /** 租户内按手机号查（ADR-0023 手机号租户内唯一 · 2026-08） */
   Optional<User> findByTenantIdAndPhone(Long tenantId, String phone);
 
