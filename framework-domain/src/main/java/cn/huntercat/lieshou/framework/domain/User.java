@@ -95,6 +95,10 @@ public class User {
   @Schema(description = "Phone (optional)", example = "13800000000")
   private String phone;
 
+  @Column(name = "avatar_url", nullable = true, length = 2048)
+  @Schema(description = "用户头像 URL（上传文件路径或默认头像标识 · 2026-09 头像功能）", example = "/api/user-files/avatars/1/3/a1b2c3.png")
+  private String avatarUrl;
+
   @Column(name = "password_hash", nullable = true, length = 100)  // nullable=true: 管理员建用户可不设密码(首次验证码激活设置)
   @Schema(
       description =
@@ -204,6 +208,14 @@ public class User {
 
   public void setPhone(String phone) {
     this.phone = phone;
+  }
+
+  public String getAvatarUrl() {
+    return avatarUrl;
+  }
+
+  public void setAvatarUrl(String avatarUrl) {
+    this.avatarUrl = avatarUrl;
   }
 
   /**
