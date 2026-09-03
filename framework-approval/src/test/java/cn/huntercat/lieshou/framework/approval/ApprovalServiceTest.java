@@ -62,7 +62,8 @@ class ApprovalServiceTest {
   }
 
   private CreateApprovalRequest createReq(Long approverId) {
-    return new CreateApprovalRequest("EXPENSE", "差旅报销", new BigDecimal("120.00"), "出差", approverId);
+    return new CreateApprovalRequest(
+        "EXPENSE", "差旅报销", new BigDecimal("120.00"), "出差", approverId, null);
   }
 
   @Test
@@ -87,7 +88,7 @@ class ApprovalServiceTest {
   @Test
   void create_invalidType_throwsInvalidType() {
     CreateApprovalRequest bad =
-        new CreateApprovalRequest("FIREWORKS", "x", new BigDecimal("1"), null, 2L);
+        new CreateApprovalRequest("FIREWORKS", "x", new BigDecimal("1"), null, 2L, null);
     assertThatThrownBy(() -> service.create(1L, 1L, bad, "ip", "ua", null))
         .isInstanceOf(cn.huntercat.lieshou.framework.approval.dto.InvalidTypeException.class);
   }
@@ -169,5 +170,42 @@ class ApprovalServiceTest {
                 new UserView(4L, "u4", "User4", "u4@x", "ACTIVE", List.of("TENANT_ADMIN"))));
     ApprovalRequest saved = service.create(1L, 1L, createReq(null), "ip", "ua", null);
     assertThat(saved.getApproverId()).isEqualTo(4L);
+  }
+
+  @Test
+  void create_withApproverChain_setsChainAndFirstApprover() {
+    CreateApprovalRequest req =
+        new CreateApprovalRequest(
+            "EXPENSE", "采购", new BigDecimal("500"), null, null, List.of(3L, 5L, 7L));
+    ApprovalRequest saved = service.create(1L, 1L, req, "ip", "ua", null);
+    assertThat(saved.getApproverId()).isEqualTo(3L);
+    assertThat(saved.getApproverIds()).isEqualTo("3,5,7");
+    assertThat(saved.getCurrentStep()).isZero();
+  }
+
+  @Test
+  void approve_intermediateNode_advancesToNextApprover() {
+    ApprovalRequest a = pendingRequest(10L, 1L, 1L, 3L);
+    a.setApproverIds("3,5,7");
+    a.setCurrentStep(0);
+    when(repo.findById(10L)).thenReturn(Optional.of(a));
+    when(repo.save(a)).thenReturn(a);
+    ApprovalRequest saved = service.approve(10L, 1L, 3L, new DecideRequest(null), "ip", "ua", null);
+    assertThat(saved.getStatus()).isEqualTo(ApprovalRequest.Status.PENDING);
+    assertThat(saved.getCurrentStep()).isEqualTo(1);
+    assertThat(saved.getApproverId()).isEqualTo(5L);
+    verify(notifier).notifyApprover(1L, saved);
+  }
+
+  @Test
+  void approve_lastNode_finishesApproved() {
+    ApprovalRequest a = pendingRequest(10L, 1L, 1L, 7L);
+    a.setApproverIds("3,5,7");
+    a.setCurrentStep(2);
+    when(repo.findById(10L)).thenReturn(Optional.of(a));
+    when(repo.save(a)).thenReturn(a);
+    ApprovalRequest saved = service.approve(10L, 1L, 7L, new DecideRequest("同意"), "ip", "ua", null);
+    assertThat(saved.getStatus()).isEqualTo(ApprovalRequest.Status.APPROVED);
+    verify(notifier).notifyRequester(1L, saved, "通过");
   }
 }

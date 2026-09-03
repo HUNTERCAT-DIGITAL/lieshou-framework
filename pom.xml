@@ -24,6 +24,7 @@
     <module>framework-domain</module>
     <module>framework-service</module>
     <module>framework-approval</module>
+    <module>framework-rules</module>
     <module>framework-auth</module>
     <module>framework-i18n</module>
   </modules>
@@ -59,6 +60,11 @@
       <dependency>
         <groupId>cn.huntercat</groupId>
         <artifactId>framework-approval</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>cn.huntercat</groupId>
+        <artifactId>framework-rules</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

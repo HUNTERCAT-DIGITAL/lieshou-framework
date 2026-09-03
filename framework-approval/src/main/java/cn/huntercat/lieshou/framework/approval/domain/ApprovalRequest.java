@@ -100,6 +100,14 @@ public class ApprovalRequest {
   @Schema(description = "决策时间", accessMode = Schema.AccessMode.READ_ONLY)
   private Instant decidedAt;
 
+  @Column(name = "approver_ids", length = 500)
+  @Schema(description = "审批人链（逗号分隔用户 ID，多级审批；空 = 单步审批）")
+  private String approverIds;
+
+  @Column(name = "current_step", nullable = false)
+  @Schema(description = "当前审批步骤（0-based，多级审批用）", example = "0")
+  private int currentStep = 0;
+
   @Column(name = "created_at", nullable = false, updatable = false)
   @Schema(description = "Create timestamp", accessMode = Schema.AccessMode.READ_ONLY)
   private Instant createdAt;
@@ -224,6 +232,22 @@ public class ApprovalRequest {
 
   public void setDecidedAt(Instant decidedAt) {
     this.decidedAt = decidedAt;
+  }
+
+  public String getApproverIds() {
+    return approverIds;
+  }
+
+  public void setApproverIds(String approverIds) {
+    this.approverIds = approverIds;
+  }
+
+  public int getCurrentStep() {
+    return currentStep;
+  }
+
+  public void setCurrentStep(int currentStep) {
+    this.currentStep = currentStep;
   }
 
   public Instant getCreatedAt() {

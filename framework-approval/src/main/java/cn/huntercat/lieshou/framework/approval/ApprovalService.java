@@ -18,9 +18,11 @@ import cn.huntercat.lieshou.framework.approval.port.NotifierPort;
 import cn.huntercat.lieshou.framework.approval.port.UserQueryPort;
 import cn.huntercat.lieshou.framework.approval.port.UserView;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 审批业务核心（上游同源唯一）。
@@ -50,7 +52,7 @@ public class ApprovalService {
     this.notifier = notifier;
   }
 
-  /** 发起审批（approverId 可空：租户管理员兜底） */
+  /** 发起审批（approverId 可空：租户管理员兜底；approverIds 提供则启用多级审批链） */
   public ApprovalRequest create(
       Long tenantId,
       Long requesterId,
@@ -58,8 +60,8 @@ public class ApprovalService {
       String clientIp,
       String userAgent,
       String requestId) {
-    Long approverId = resolveApprover(tenantId, body.approverId());
-    if (approverId == null) {
+    List<Long> chain = resolveChain(tenantId, body);
+    if (chain.isEmpty()) {
       throw new ApproverResolveException("无法解析审批人（租户无可用用户）");
     }
     ApprovalRequest a =
@@ -69,7 +71,11 @@ public class ApprovalService {
             body.title().trim(),
             body.amount(),
             requesterId,
-            approverId);
+            chain.get(0));
+    if (chain.size() > 1) {
+      a.setApproverIds(joinIds(chain));
+      a.setCurrentStep(0);
+    }
     if (body.detail() != null && !body.detail().isBlank()) a.setDetail(body.detail());
     ApprovalRequest saved = repo.save(a);
     auditService.recordSuccess(
@@ -77,7 +83,7 @@ public class ApprovalService {
         requesterId,
         ApprovalAuditLog.Action.CREATE,
         saved.getId(),
-        "发起审批 " + saved.getTitle(),
+        "发起审批 " + saved.getTitle() + (chain.size() > 1 ? "（多级审批 " + chain.size() + " 级）" : ""),
         clientIp,
         userAgent,
         requestId);
@@ -85,7 +91,7 @@ public class ApprovalService {
     return saved;
   }
 
-  /** 通过（PENDING → APPROVED · 仅审批人） */
+  /** 通过（PENDING · 仅当前节点审批人；多级链逐级流转，末级后转 APPROVED） */
   public ApprovalRequest approve(
       Long id,
       Long tenantId,
@@ -97,10 +103,34 @@ public class ApprovalService {
     ApprovalRequest a = findTenantRequest(id, tenantId);
     requirePending(a, "approve");
     requireApprover(a, userId);
+    decide(a, userId);
+
+    List<Long> chain = parseChain(a.getApproverIds());
+    if (chain.size() > 1 && a.getCurrentStep() < chain.size() - 1) {
+      // 还有下一级：进入下一审批人，保持 PENDING
+      int next = a.getCurrentStep() + 1;
+      a.setCurrentStep(next);
+      a.setApproverId(chain.get(next));
+      a.setStatus(ApprovalRequest.Status.PENDING);
+      a.setComment(null);
+      ApprovalRequest saved = repo.save(a);
+      auditService.recordSuccess(
+          tenantId,
+          userId,
+          ApprovalAuditLog.Action.APPROVE,
+          saved.getId(),
+          "第 " + (next) + "/" + chain.size() + " 级审批通过，流转至下一审批人",
+          clientIp,
+          userAgent,
+          requestId);
+      notifier.notifyApprover(tenantId, saved);
+      return saved;
+    }
+
+    // 末级（或单步）：终态通过
     a.setStatus(ApprovalRequest.Status.APPROVED);
     if (body != null && body.comment() != null && !body.comment().isBlank())
       a.setComment(body.comment());
-    decide(a, userId);
     ApprovalRequest saved = repo.save(a);
     auditService.recordSuccess(
         tenantId,
@@ -284,5 +314,32 @@ public class ApprovalService {
     } catch (Exception e) {
       return null;
     }
+  }
+
+  /** 解析审批人链：body.approverIds 优先（多级），否则单步 approverId */
+  private List<Long> resolveChain(Long tenantId, CreateApprovalRequest body) {
+    if (body.approverIds() != null && !body.approverIds().isEmpty()) {
+      return body.approverIds().stream().distinct().toList();
+    }
+    Long approverId = resolveApprover(tenantId, body.approverId());
+    return approverId == null ? List.of() : List.of(approverId);
+  }
+
+  /** 解析审批人链字符串（逗号分隔） */
+  private List<Long> parseChain(String approverIds) {
+    if (approverIds == null || approverIds.isBlank()) return List.of();
+    try {
+      return Arrays.stream(approverIds.split(","))
+          .map(String::trim)
+          .filter(s -> !s.isEmpty())
+          .map(Long::parseLong)
+          .toList();
+    } catch (NumberFormatException e) {
+      return List.of();
+    }
+  }
+
+  private String joinIds(List<Long> ids) {
+    return ids.stream().map(String::valueOf).collect(Collectors.joining(","));
   }
 }
