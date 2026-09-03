@@ -14,5 +14,9 @@ public interface RuleDefinitionRepository extends JpaRepository<RuleDefinition, 
   List<RuleDefinition> findByTenantIdIsNullAndDomainAndEnabledTrueOrderByPriorityDesc(
       String domain);
 
+  List<RuleDefinition> findByTenantIdOrderByPriorityDesc(Long tenantId);
+
+  List<RuleDefinition> findByTenantIdIsNullOrderByPriorityDesc();
+
   Optional<RuleDefinition> findByTenantIdAndCode(Long tenantId, String code);
 }
