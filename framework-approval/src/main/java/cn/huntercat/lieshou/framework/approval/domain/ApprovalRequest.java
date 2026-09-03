@@ -22,12 +22,16 @@ public class ApprovalRequest {
 
   /** 审批类型 */
   public enum Type {
-    /** 支出/报销 */
+    /** 支出 */
     EXPENSE,
+    /** 报销 */
+    REIMBURSE,
     /** 采购 */
     PURCHASE,
     /** 销售出库 */
     SALE,
+    /** 发文 */
+    DOC,
     /** 其他 */
     OTHER
   }
@@ -136,6 +140,12 @@ public class ApprovalRequest {
   @PrePersist
   void onCreate() {
     if (createdAt == null) createdAt = Instant.now();
+    if (updatedAt == null) updatedAt = Instant.now();
+  }
+
+  @jakarta.persistence.PreUpdate
+  void onUpdate() {
+    updatedAt = Instant.now();
   }
 
   public Long getId() {
