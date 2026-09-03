@@ -96,6 +96,12 @@ public class RuleDefinition {
   @PrePersist
   void onCreate() {
     if (createdAt == null) createdAt = Instant.now();
+    if (updatedAt == null) updatedAt = Instant.now();
+  }
+
+  @jakarta.persistence.PreUpdate
+  void onUpdate() {
+    updatedAt = Instant.now();
   }
 
   public Long getId() {
