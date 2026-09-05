@@ -19,6 +19,7 @@
   <description>猎手云产品线核心框架（lieshou-boot 单体 / lieshou-cloud 微服务 共同上游·同源唯一）</description>
 
   <modules>
+    <module>framework-ai</module>
     <module>framework-jwt</module>
     <module>framework-common</module>
     <module>framework-domain</module>
@@ -37,6 +38,11 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>cn.huntercat</groupId>
+        <artifactId>framework-ai</artifactId>
+        <version>${project.version}</version>
+      </dependency>
       <dependency>
         <groupId>cn.huntercat</groupId>
         <artifactId>framework-jwt</artifactId>
