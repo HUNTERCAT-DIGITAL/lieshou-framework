@@ -41,9 +41,13 @@ class AuthServiceTest {
 
   private AuthService authService;
 
+  /** 开放注册实例（allow-open-register=true · 仅测试旧开放语义用例使用） */
+  private AuthService openAuth;
+
   @BeforeEach
   void setUp() {
-    authService = new AuthService(jwt, userClient, passwordEncoder, "huntercat");
+    authService = new AuthService(jwt, userClient, passwordEncoder, "huntercat", false);
+    openAuth = new AuthService(jwt, userClient, passwordEncoder, "huntercat", true);
   }
 
   private UserAuthView user(String status) {
@@ -210,9 +214,28 @@ class AuthServiceTest {
     verify(userClient, never()).findByTenantAndPhone(anyString(), anyString());
   }
 
-  /** 开放注册：code 为空时跳过验证码校验,直接创建用户并签发 token（2026-08） */
+  /**
+   * 2026-09 收紧：默认（allow-open-register=false）空 code 注册必须被拒 REGISTER_CODE_REQUIRED，
+   * 且不落到 user-service 创建用户。
+   */
   @Test
-  void register_codeBlank_skipsVerification() {
+  void registerRejectsBlankCodeByDefault() {
+    for (String blank : new String[] {null, "   "}) {
+      RegisterRequest req =
+          new RegisterRequest(
+              "huntercat", "u_new", "新用户", "pw123456", "SMS", "13800000000", blank, null);
+      assertThatThrownBy(() -> authService.register(req))
+          .isInstanceOf(BaseException.class)
+          .satisfies(
+              e ->
+                  assertThat(((BaseException) e).errorCode()).isEqualTo("REGISTER_CODE_REQUIRED"));
+      verify(userClient, never()).createUser(any());
+    }
+  }
+
+  /** 开放注册（仅显式 allow-open-register=true）：code 为空时跳过验证码校验,直接创建用户并签发 token */
+  @Test
+  void register_codeBlank_skipsVerificationWhenOpenEnabled() {
     java.util.Map<String, Object> created = new java.util.HashMap<>();
     created.put("id", 1);
     created.put("tenantId", 1);
@@ -228,7 +251,7 @@ class AuthServiceTest {
     RegisterRequest req =
         new RegisterRequest(
             "huntercat", "u_new", "新用户", "pw123456", "SMS", "13800000000", null, null);
-    TokenResponse resp = authService.register(req);
+    TokenResponse resp = openAuth.register(req);
 
     assertThat(resp.username()).isEqualTo("u_new");
     assertThat(resp.tenantCode()).isEqualTo("huntercat");
@@ -295,7 +318,7 @@ class AuthServiceTest {
                     .isEqualTo(ErrorCode.SERVICE_UNAVAILABLE.name()));
   }
 
-  /** 注册：createUser 依赖故障 → 503，不吞成 REGISTER_FAILED */
+  /** 注册：createUser 依赖故障 → 503，不吞成 REGISTER_FAILED（开放注册实例：空 code 走到 createUser） */
   @Test
   void register_upstreamDown_throwsServiceUnavailable() {
     when(userClient.createUser(any())).thenThrow(new RuntimeException("connect timeout"));
@@ -303,7 +326,7 @@ class AuthServiceTest {
     RegisterRequest req =
         new RegisterRequest(
             "huntercat", "u_new", "新用户", "pw123456", "SMS", "13800000000", null, null);
-    assertThatThrownBy(() -> authService.register(req))
+    assertThatThrownBy(() -> openAuth.register(req))
         .isInstanceOf(BaseException.class)
         .satisfies(
             e ->

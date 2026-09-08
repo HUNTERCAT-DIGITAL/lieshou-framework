@@ -44,15 +44,20 @@ public class AuthService {
   /** 默认租户编码（未传 tenantCode 时） · 全局统一 default（2026-08-29 决策：无特别说明的默认租户均为 default） · 可配置（auth.default-tenant-code） */
   private final String defaultTenantCode;
 
+  /** 开放注册开关（2026-09 收紧：默认 false = 注册必须提供验证码；仅显式开启时保留无码开放注册） */
+  private final boolean registerOpenRegisterEnabled;
+
   public AuthService(
       JwtService jwt,
       UserAuthPort userClient,
       PasswordEncoder passwordEncoder,
-      @Value("${auth.default-tenant-code:default}") String defaultTenantCode) {
+      @Value("${auth.default-tenant-code:default}") String defaultTenantCode,
+      @Value("${auth.register.allow-open-register:false}") boolean registerOpenRegisterEnabled) {
     this.jwt = jwt;
     this.userClient = userClient;
     this.passwordEncoder = passwordEncoder;
     this.defaultTenantCode = defaultTenantCode;
+    this.registerOpenRegisterEnabled = registerOpenRegisterEnabled;
   }
 
   /**
@@ -203,9 +208,18 @@ public class AuthService {
     return issueTokens(user, req.tenantCode());
   }
 
-  /** 注册（验证码可选）→ 创建用户 → 注册即登录 */
+  /**
+   * 注册（验证码必填默认；allow-open-register=true 时可选）→ 创建用户 → 注册即登录.
+   *
+   * <p>2026-09 安全收紧：无验证码的注册默认拒绝（REGISTER_CODE_REQUIRED）；
+   * 开放注册仅在 {@code auth.register.allow-open-register=true} 时保留。
+   */
   public TokenResponse register(RegisterRequest req) {
-    // 简化注册：code 为空时跳过验证码校验（开放注册 · 2026-08）；非空仍校验（兼容验证码流程）
+    if ((req.code() == null || req.code().isBlank()) && !registerOpenRegisterEnabled) {
+      throw new BaseException(
+          "REGISTER_CODE_REQUIRED", HttpStatus.BAD_REQUEST, "注册必须提供短信/邮箱验证码");
+    }
+    // 简化注册：code 为空时跳过验证码校验（开放注册 · 2026-08，默认关闭）；非空仍校验（兼容验证码流程）
     if (req.code() != null && !req.code().isBlank()) {
       verifyCode(req.channel(), req.target(), "REGISTER", req.code());
     }
