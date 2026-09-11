@@ -2,6 +2,7 @@ package cn.huntercat.lieshou.framework.common.web;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
@@ -28,8 +29,8 @@ import java.util.NoSuchElementException;
  * <pre>{@code { "error": "<机器可读码>", "message": "<人类可读信息>" }}</pre>
  *
  * <p>覆盖：{@link BaseException}（含各业务子类）→ 异常自带码与状态；参数校验 （{@code @Valid} 字段级）→ {@code
- * VALIDATION_FAILED}；JDK 语义异常 （NoSuchElement/IllegalState/IllegalArgument）→ 404/409/400；兜底 → 500
- * （仅记日志，不向客户端泄露堆栈）。
+ * VALIDATION_FAILED}；JDK 语义异常 （NoSuchElement/IllegalState/IllegalArgument）→ 404/409/400；兜底 → 保留
+ * Spring 自带 4xx 语义（{@link org.springframework.web.ErrorResponse}），其余 → 500（仅记日志，不向客户端泄露堆栈）。
  *
  * <p>多语言（S5）：{@link BaseException} 携带 i18nKey 时，message 由 {@link I18nMessages} 按请求 Locale 本地化；
  * 容器未装配 framework-i18n（ObjectProvider 降级）或 i18nKey 为 null（旧用法）时原样透传。
@@ -101,20 +102,39 @@ public class GlobalExceptionHandler {
     return body(HttpStatus.CONFLICT, "DATA_CONFLICT", "数据冲突，请检查唯一性约束后重试");
   }
 
-  /** 兜底：未知异常 → 500，仅记日志不泄露堆栈 */
+  /** 兜底：保留 Spring 自带 4xx 状态码；其余未知异常 → 500，仅记日志不泄露堆栈 */
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Map<String, String>> onUnexpected(Exception e) {
+    // Spring MVC 自带语义异常（ResponseStatusException / NoResourceFound / 缺参等）实现 ErrorResponse：
+    // 先尊重其状态码，避免被本兜底统一成 500（跨租户 403 → 500 会让前端误判为服务端故障）
+    if (e instanceof org.springframework.web.ErrorResponse er
+        && er.getStatusCode().is4xxClientError()) {
+      log.warn("业务请求被拒绝：{} {}", er.getStatusCode().value(), e.getMessage());
+      return body(er.getStatusCode(), errorCodeOf(er.getStatusCode()), e.getMessage());
+    }
     log.error("Unhandled exception", e);
     return body(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCode.INTERNAL_ERROR, "服务器内部错误，请稍后重试");
   }
 
+  /** 4xx 状态码 → 机器可读码（沿用既有 ErrorCode 常量；缺失即回退 HttpStatus 名） */
+  private static String errorCodeOf(HttpStatusCode status) {
+    return switch (status.value()) {
+      case 400 -> ErrorCode.BAD_REQUEST.name();
+      case 401 -> ErrorCode.UNAUTHORIZED.name();
+      case 403 -> ErrorCode.FORBIDDEN.name();
+      case 404 -> ErrorCode.NOT_FOUND.name();
+      case 409 -> ErrorCode.CONFLICT.name();
+      default -> status instanceof HttpStatus hs ? hs.name() : String.valueOf(status.value());
+    };
+  }
+
   private static ResponseEntity<Map<String, String>> body(
-      HttpStatus status, ErrorCode code, String message) {
+      HttpStatusCode status, ErrorCode code, String message) {
     return body(status, code.name(), message);
   }
 
   private static ResponseEntity<Map<String, String>> body(
-      HttpStatus status, String code, String message) {
+      HttpStatusCode status, String code, String message) {
     return ResponseEntity.status(status).body(Map.of("error", code, "message", message));
   }
 }
