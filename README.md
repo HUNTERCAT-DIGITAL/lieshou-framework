@@ -2,12 +2,12 @@
 
 > 猎手云产品线的**核心能力框架**（上游同源唯一）：认证 / JWT / 统一异常 / 审计 / 权限 / 领域模型 / 审批。
 > **lieshou-boot（单体）与 lieshou-cloud（微服务）共用的薄壳底座**——业务逻辑只在此维护，两端装配引用。
-> **v0.1.0（RELEASE）** · 六模块 · 110 测试全过
+> **v0.2.0（RELEASE）** · 九模块 · 130 测试全过
 
 <p align="center">
   <img src="https://img.shields.io/badge/Java-21-orange" alt="Java 21"/>
   <img src="https://img.shields.io/badge/Spring_Boot-3.5-green" alt="Spring Boot 3.5"/>
-  <img src="https://img.shields.io/badge/Version-0.1.0-blue" alt="v0.1.0"/>
+  <img src="https://img.shields.io/badge/Version-0.2.0-blue" alt="v0.2.0"/>
   <img src="https://img.shields.io/badge/License-Apache--2.0-brightgreen" alt="Apache-2.0"/>
 </p>
 
@@ -21,7 +21,7 @@ Spring Cloud      →  lieshou-cloud      微服务/分布式（Framework + 服�
 
 **规则**：业务逻辑（Service / 端口 / DTO / 领域模型）只进 Framework；各端只留 Controller + 装配 + 启动。
 
-## 模块（六模块 · v0.1.0）
+## 模块（九模块 · v0.2.0）
 
 | 模块 | 内容 | 依赖 |
 | --- | --- | --- |
@@ -31,6 +31,9 @@ Spring Cloud      →  lieshou-cloud      微服务/分布式（Framework + 服�
 | **framework-service** | 领域服务：用户/租户/角色/邀请码/通知/验证码/审计生命周期（ADR-0044 上收）+ CodeSender 端口 | domain + common |
 | **framework-approval** | 审批业务：ApprovalService 状态机 + 审批实体 + UserQueryPort/NotifierPort | domain + common |
 | **framework-auth** | 认证业务：AuthService（登录/验证码/注册/重置/切换租户/多租户选项）/ JwtService / UserAuthPort（端口）/ DTO | jwt + security |
+| **framework-rules** | 规则引擎：`RuleDefinition` 实体 + Repository（按 domain 查询 / 全量查询） | domain + common |
+| **framework-ai** | AI 抽象：`AiModelClient` 端口 + OpenAI 兼容实现 + Mock 降级实现 | 无（仅 slf4j / jackson） |
+| **framework-i18n** | 多语言：`I18nMessages` 门面（按 `Accept-Language` 解析，缺省中文）+ 自动装配 | spring-boot-starter-web |
 
 ## 端口-适配器模式（单体本地实现 / 微服务 Feign 装配）
 
