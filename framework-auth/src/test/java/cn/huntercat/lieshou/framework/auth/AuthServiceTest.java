@@ -87,9 +87,7 @@ class AuthServiceTest {
     assertThatThrownBy(() -> authService.login(new LoginRequest("huntercat", "admin", "wrong")))
         .isInstanceOf(BaseException.class)
         .satisfies(
-            e ->
-                assertThat(((BaseException) e).errorCode())
-                    .isEqualTo("INVALID_CREDENTIALS"))
+            e -> assertThat(((BaseException) e).errorCode()).isEqualTo("INVALID_CREDENTIALS"))
         .hasMessage("error.auth.invalid_credentials"); // i18n key（GlobalExceptionHandler 本地化）
   }
 
@@ -99,9 +97,7 @@ class AuthServiceTest {
 
     assertThatThrownBy(() -> authService.login(new LoginRequest("huntercat", "ghost", "x")))
         .isInstanceOf(BaseException.class)
-        .satisfies(
-            e ->
-                assertThat(((BaseException) e).errorCode()).isEqualTo("USER_NOT_FOUND"))
+        .satisfies(e -> assertThat(((BaseException) e).errorCode()).isEqualTo("USER_NOT_FOUND"))
         .hasMessage("error.auth.user_not_found");
   }
 
@@ -112,9 +108,7 @@ class AuthServiceTest {
 
     assertThatThrownBy(() -> authService.login(new LoginRequest("huntercat", "admin", "admin123")))
         .isInstanceOf(BaseException.class)
-        .satisfies(
-            e ->
-                assertThat(((BaseException) e).errorCode()).isEqualTo("ACCOUNT_DISABLED"))
+        .satisfies(e -> assertThat(((BaseException) e).errorCode()).isEqualTo("ACCOUNT_DISABLED"))
         .hasMessage("error.auth.account_disabled");
   }
 
@@ -158,12 +152,9 @@ class AuthServiceTest {
     when(userClient.findByTenantAndUsername("huntercat", "13900000000")).thenReturn(null);
     when(userClient.findByTenantAndPhone("huntercat", "13900000000")).thenReturn(null);
 
-    assertThatThrownBy(
-            () -> authService.login(new LoginRequest("huntercat", "13900000000", "x")))
+    assertThatThrownBy(() -> authService.login(new LoginRequest("huntercat", "13900000000", "x")))
         .isInstanceOf(BaseException.class)
-        .satisfies(
-            e ->
-                assertThat(((BaseException) e).errorCode()).isEqualTo("USER_NOT_FOUND"))
+        .satisfies(e -> assertThat(((BaseException) e).errorCode()).isEqualTo("USER_NOT_FOUND"))
         .hasMessage("error.auth.user_not_found");
   }
 
@@ -174,8 +165,7 @@ class AuthServiceTest {
     when(userClient.findByTenantAndPhone("huntercat", "13800000000"))
         .thenThrow(new RuntimeException("connect timeout"));
 
-    assertThatThrownBy(
-            () -> authService.login(new LoginRequest("huntercat", "13800000000", "x")))
+    assertThatThrownBy(() -> authService.login(new LoginRequest("huntercat", "13800000000", "x")))
         .isInstanceOf(BaseException.class)
         .satisfies(
             e ->
@@ -215,8 +205,8 @@ class AuthServiceTest {
   }
 
   /**
-   * 2026-09 收紧：默认（allow-open-register=false）空 code 注册必须被拒 REGISTER_CODE_REQUIRED，
-   * 且不落到 user-service 创建用户。
+   * 2026-09 收紧：默认（allow-open-register=false）空 code 注册必须被拒 REGISTER_CODE_REQUIRED， 且不落到 user-service
+   * 创建用户。
    */
   @Test
   void registerRejectsBlankCodeByDefault() {
@@ -227,8 +217,7 @@ class AuthServiceTest {
       assertThatThrownBy(() -> authService.register(req))
           .isInstanceOf(BaseException.class)
           .satisfies(
-              e ->
-                  assertThat(((BaseException) e).errorCode()).isEqualTo("REGISTER_CODE_REQUIRED"));
+              e -> assertThat(((BaseException) e).errorCode()).isEqualTo("REGISTER_CODE_REQUIRED"));
       verify(userClient, never()).createUser(any());
     }
   }
@@ -305,7 +294,8 @@ class AuthServiceTest {
   /** 验证码登录：查用户时依赖故障 → 503，不吞成 USER_NOT_FOUND */
   @Test
   void loginWithCode_upstreamDown_throwsServiceUnavailable() {
-    when(userClient.findByTenantAndPhone("huntercat", "13800000000")).thenThrow(new RuntimeException("connect timeout"));
+    when(userClient.findByTenantAndPhone("huntercat", "13800000000"))
+        .thenThrow(new RuntimeException("connect timeout"));
 
     assertThatThrownBy(
             () ->

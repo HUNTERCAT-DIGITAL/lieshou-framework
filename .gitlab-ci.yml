@@ -1,0 +1,24 @@
+# lieshou-framework 质量门禁（GitLab CI · 2026-09）
+# 前置：huntercat-digital 组级 docker runner（mesh-dell · tags: java,wqc）
+# 门 = mvn -B -ntp verify（含 spotless check）——不留"跳过格式"的假绿
+stages: [verify]
+
+variables:
+  # 内网 Caddy 自签证书不在 job 容器信任库 → 放行 git clone（对齐 mobile-web 先例）
+  GIT_SSL_NO_VERIFY: "true"
+
+default:
+  image: maven:3.9-eclipse-temurin-21
+  tags: [java, wqc]
+  # 不用 GitLab CI cache：依赖缓存由 runner 宿主卷提供（/srv/gitlab-runner-cache/m2 → /root/.m2）
+
+verify:
+  stage: verify
+  timeout: 30m
+  script:
+    - java -version
+    - mvn -B -ntp verify
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_TAG'

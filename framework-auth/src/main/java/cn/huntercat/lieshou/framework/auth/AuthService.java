@@ -9,12 +9,12 @@ import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.ActivateRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.LoginRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.LoginWithCodeRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.RefreshRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.RegisterRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.ResetPasswordRequest;
-import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.ActivateRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.SendCodeRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.TokenResponse;
 import cn.huntercat.lieshou.framework.common.api.BaseException;
@@ -41,7 +41,10 @@ public class AuthService {
   private final UserAuthPort userClient;
   private final PasswordEncoder passwordEncoder;
 
-  /** 默认租户编码（未传 tenantCode 时） · 全局统一 default（2026-08-29 决策：无特别说明的默认租户均为 default） · 可配置（auth.default-tenant-code） */
+  /**
+   * 默认租户编码（未传 tenantCode 时） · 全局统一 default（2026-08-29 决策：无特别说明的默认租户均为 default） ·
+   * 可配置（auth.default-tenant-code）
+   */
   private final String defaultTenantCode;
 
   /** 开放注册开关（2026-09 收紧：默认 false = 注册必须提供验证码；仅显式开启时保留无码开放注册） */
@@ -63,8 +66,8 @@ public class AuthService {
   /**
    * 登录: tenantCode + (username | phone) + password → access + refresh tokens.
    *
-   * <p>支持账号或手机号密码登录（2026-09）: 先按租户+账号查，未命中回退按租户+手机号查（ADR-0022 多租户隔离，
-   * 手机号租户内唯一，避免全局 findByPhone 跨租户歧义）；手机号命中且请求未显式指定租户时以用户自身租户签发。
+   * <p>支持账号或手机号密码登录（2026-09）: 先按租户+账号查，未命中回退按租户+手机号查（ADR-0022 多租户隔离， 手机号租户内唯一，避免全局 findByPhone
+   * 跨租户歧义）；手机号命中且请求未显式指定租户时以用户自身租户签发。
    *
    * <p>Phase 6: 校验账户 status（非 ACTIVE 拒绝登录）；登录成功回写 last_login_at.
    *
@@ -91,9 +94,7 @@ public class AuthService {
     if (!"ACTIVE".equals(status)) {
       String code = "ACCOUNT_" + status;
       String i18nKey =
-          "DISABLED".equals(status)
-              ? "error.auth.account_disabled"
-              : "error.auth.account_locked";
+          "DISABLED".equals(status) ? "error.auth.account_disabled" : "error.auth.account_locked";
       throw BaseException.i18n(code, HttpStatus.FORBIDDEN, i18nKey);
     }
     List<String> roles =
@@ -152,8 +153,7 @@ public class AuthService {
       }
       throw e;
     } catch (RuntimeException e) {
-      log.warn(
-          "login: user-service 手机号查询失败 tenant={} phone={}", tenantCode, req.username(), e);
+      log.warn("login: user-service 手机号查询失败 tenant={} phone={}", tenantCode, req.username(), e);
       throw new BaseException(ErrorCode.SERVICE_UNAVAILABLE, UPSTREAM_UNAVAILABLE, e);
     }
     return user;
@@ -211,13 +211,12 @@ public class AuthService {
   /**
    * 注册（验证码必填默认；allow-open-register=true 时可选）→ 创建用户 → 注册即登录.
    *
-   * <p>2026-09 安全收紧：无验证码的注册默认拒绝（REGISTER_CODE_REQUIRED）；
-   * 开放注册仅在 {@code auth.register.allow-open-register=true} 时保留。
+   * <p>2026-09 安全收紧：无验证码的注册默认拒绝（REGISTER_CODE_REQUIRED）； 开放注册仅在 {@code
+   * auth.register.allow-open-register=true} 时保留。
    */
   public TokenResponse register(RegisterRequest req) {
     if ((req.code() == null || req.code().isBlank()) && !registerOpenRegisterEnabled) {
-      throw new BaseException(
-          "REGISTER_CODE_REQUIRED", HttpStatus.BAD_REQUEST, "注册必须提供短信/邮箱验证码");
+      throw new BaseException("REGISTER_CODE_REQUIRED", HttpStatus.BAD_REQUEST, "注册必须提供短信/邮箱验证码");
     }
     // 简化注册：code 为空时跳过验证码校验（开放注册 · 2026-08，默认关闭）；非空仍校验（兼容验证码流程）
     if (req.code() != null && !req.code().isBlank()) {
@@ -277,8 +276,8 @@ public class AuthService {
   }
 
   /**
-   * 首次登录激活（2026-08）：管理员建用户未设密码 → 登录后直接设置密码（token 即身份,无需再验证码）。
-   * 从 JWT claims 取用户 → 设密码 → 重新查完整用户 → 签发 tokens（activationRequired=false）。
+   * 首次登录激活（2026-08）：管理员建用户未设密码 → 登录后直接设置密码（token 即身份,无需再验证码）。 从 JWT claims 取用户 → 设密码 → 重新查完整用户 → 签发
+   * tokens（activationRequired=false）。
    */
   public TokenResponse activate(Claims claims, ActivateRequest req) {
     Long userId = claims.get("uid", Long.class);
@@ -364,8 +363,7 @@ public class AuthService {
         jwt.generateAccessToken(user.id(), user.tenantId(), tcode, user.username(), roles);
     String refresh = jwt.generateRefreshToken(user.id(), user.username());
     markLastLogin(user.id());
-    boolean activationRequired =
-        user.passwordHash() == null || user.passwordHash().isBlank();
+    boolean activationRequired = user.passwordHash() == null || user.passwordHash().isBlank();
     return new TokenResponse(
         access,
         refresh,
@@ -468,9 +466,7 @@ public class AuthService {
     if (!"ACTIVE".equals(status)) {
       String code = "ACCOUNT_" + status;
       String i18nKey =
-          "DISABLED".equals(status)
-              ? "error.auth.account_disabled"
-              : "error.auth.account_locked";
+          "DISABLED".equals(status) ? "error.auth.account_disabled" : "error.auth.account_locked";
       throw BaseException.i18n(code, HttpStatus.FORBIDDEN, i18nKey);
     }
     java.util.List<String> roles =
