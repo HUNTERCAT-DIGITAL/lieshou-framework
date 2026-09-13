@@ -9,22 +9,26 @@ import org.springframework.http.HttpStatus;
  * GlobalExceptionHandler} 统一映射为 {@code { error, message }} 契约体。
  *
  * <p>文案来源（多语言 · 2026-09 S5）：
+ *
  * <ul>
  *   <li>新代码：{@code BaseException.i18n(code, "error.xxx.yyy", args)} —— 只写 key + 参数，message 由
- *       framework-i18n 按请求 Locale 本地化（前端与后端共享 lieshou-i18n 数据源）</li>
- *   <li>旧代码：直接 {@code new BaseException(code, message)} —— message 透传（i18nKey 为 null，行为不变）</li>
+ *       framework-i18n 按请求 Locale 本地化（前端与后端共享 lieshou-i18n 数据源）
+ *   <li>旧代码：直接 {@code new BaseException(code, message)} —— message 透传（i18nKey 为 null，行为不变）
  * </ul>
  */
 public class BaseException extends RuntimeException {
 
   private final String errorCode;
   private final HttpStatus httpStatus;
+
   /** i18n key（null = 直接透传 message 的旧用法） */
   private final String i18nKey;
+
   private final Object[] i18nArgs;
 
   /** 业务域特有错误码 + i18n key + 参数（多语言推荐用法） */
-  public static BaseException i18n(String errorCode, HttpStatus httpStatus, String i18nKey, Object... i18nArgs) {
+  public static BaseException i18n(
+      String errorCode, HttpStatus httpStatus, String i18nKey, Object... i18nArgs) {
     return new BaseException(errorCode, httpStatus, i18nKey, i18nArgs);
   }
 
@@ -34,7 +38,8 @@ public class BaseException extends RuntimeException {
   }
 
   /** 通用错误码 + i18n key + 参数 + 根因（内部异常包装场景，保留 cause 供日志排查） */
-  public static BaseException i18n(ErrorCode code, String i18nKey, Throwable cause, Object... i18nArgs) {
+  public static BaseException i18n(
+      ErrorCode code, String i18nKey, Throwable cause, Object... i18nArgs) {
     BaseException e = new BaseException(code.name(), code.httpStatus(), i18nKey, i18nArgs);
     e.initCause(cause);
     return e;
@@ -68,7 +73,8 @@ public class BaseException extends RuntimeException {
     this(code.name(), code.httpStatus(), message, cause);
   }
 
-  private BaseException(String errorCode, HttpStatus httpStatus, String i18nKey, Object[] i18nArgs) {
+  private BaseException(
+      String errorCode, HttpStatus httpStatus, String i18nKey, Object[] i18nArgs) {
     super(i18nKey); // message 暂存 key（日志可读），handler 负责本地化
     this.errorCode = errorCode;
     this.httpStatus = httpStatus;

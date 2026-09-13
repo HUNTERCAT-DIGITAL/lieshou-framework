@@ -120,7 +120,8 @@ public class UserService {
     if (repo.existsByTenantIdAndUsername(tenant.getId(), username)) {
       throw new BaseException("USERNAME_TAKEN", HttpStatus.BAD_REQUEST, "用户名已被占用");
     }
-    if (phone != null && !phone.isBlank()
+    if (phone != null
+        && !phone.isBlank()
         && repo.findByTenantIdAndPhone(tenant.getId(), phone).isPresent()) {
       throw new BaseException("PHONE_TAKEN", HttpStatus.BAD_REQUEST, "该手机号已在本租户注册");
     }
@@ -199,18 +200,15 @@ public class UserService {
     }
     if (password != null && !password.isBlank()) {
       if (password != null && !password.isBlank()) {
-      validatePassword(password);
-    }
+        validatePassword(password);
+      }
       u.setPasswordHash(
-        password != null && !password.isBlank() ? passwordEncoder.encode(password) : null);
+          password != null && !password.isBlank() ? passwordEncoder.encode(password) : null);
     }
     return repo.save(u);
   }
 
-  /**
-   * 设置用户头像 URL（2026-09 头像功能 · 独立于 update，避免破坏现有签名链路；
-   * avatarUrl 为 null 表示清除头像）。
-   */
+  /** 设置用户头像 URL（2026-09 头像功能 · 独立于 update，避免破坏现有签名链路； avatarUrl 为 null 表示清除头像）。 */
   @Transactional
   public User setAvatarUrl(Long id, Long tenantId, String avatarUrl) {
     User u = get(id, tenantId);

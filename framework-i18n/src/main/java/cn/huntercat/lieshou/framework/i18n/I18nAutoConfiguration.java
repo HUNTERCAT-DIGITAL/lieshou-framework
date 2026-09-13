@@ -1,11 +1,12 @@
 package cn.huntercat.lieshou.framework.i18n;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Locale;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.support.ResourceBundleMessageSource;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 /**
  * 多语言自动装配（L0 · S5）.
