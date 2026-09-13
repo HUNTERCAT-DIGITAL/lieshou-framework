@@ -6,7 +6,8 @@
 ## 项目身份
 - 名称: lieshou-framework（猎手云核心框架）
 - 类型: Java 核心能力框架库（业务逻辑唯一源 · 上游同源）
-- 仓库: https://github.com/HUNTERCAT-DIGITAL/lieshou-framework（main 分支 · Apache-2.0 · 已发 v0.1.0）
+- 仓库: https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework（main 分支 · Apache-2.0 · 已发 v0.2.0）
+- 发布点: tag `v0.2.0` / `release-2026-09`（protected）· CI: `.gitlab-ci.yml`（runner tag `java,wqc`）
 - 技术栈: Java 21 · Spring Boot 3.5.7 · Maven 多模块 · jjwt 0.12.6 · Spring Data JPA · Spotless(googleJavaFormat)
 
 ## 架构速览
@@ -21,7 +22,8 @@
 - Commit：Conventional Commits；业务改动 → 发新版本 → 消费方 bump。
 
 ## 当前阶段
-- v0.1.0 已 RELEASE（六模块 · 110 测试全过，`mvn clean verify` 验证）。
+- v0.2.0 已 RELEASE（九模块 · 130 测试全过 · `mvn -B -ntp verify` 即门，GitLab pipeline 强制）。
+- 历史决策原文待补：索引与摘要见 `docs/adr/README.md`（本仓不发明决策内容）。
 - ADR-0044 上收进行中：阶段 1-3（角色/邀请码 → 租户 → 用户生命周期）已完成并入库；README 已同步。
 - 认证扩展（ADR-0023）：登录/验证码/注册/重置密码/切换租户/多租户选项已同源；默认租户可配置（`auth.default-tenant-code`，缺省 huntercat）。
 
