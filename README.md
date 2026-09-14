@@ -65,17 +65,20 @@ public interface UserAuthClient extends UserAuthPort { ... }
 ## 快速开始（作为依赖）
 
 ```bash
-# 构建安装到本地 maven 仓库
+# 方式 A（推荐）：从内网 Nexus 解析，不需要本仓源码
+# 前提：~/.m2/settings.xml 已 mirror 到 https://nexus.ts.huntercat.cn/repository/maven-public/
+#       （新机器：ssh mesh-dell 'cat /srv/nexus/client-setup.sh' | bash）
+
+# 方式 B：本地构建安装（改 framework 源码后联调）
 mvn -B -ntp -DskipTests install
 
 # 使用（consumer pom）：parent 指向 framework-parent（统一 parent/BOM）
 # `framework-*` 依赖不写 <version>（由 framework-parent 的 dependencyManagement 提供）
-# 注意：<relativePath> 按两个仓库的目录布局填写，本框架仓与消费方仓平级
 <parent>
   <groupId>cn.huntercat</groupId>
   <artifactId>framework-parent</artifactId>
-  <version>0.3.0</version>
-  <relativePath>../../framework/framework-parent/pom.xml</relativePath>
+  <version>0.3.1</version>
+  <!-- 方式 A：删掉 relativePath；方式 B（源码联调）：../../framework/framework-parent/pom.xml -->
 </parent>
 
 <dependency>
@@ -89,7 +92,22 @@ mvn -B -ntp -DskipTests install
 - **v0.1.0**（RELEASE，2026-08）：https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.1.0
 - **v0.2.0**（RELEASE，2026-09-13）：https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.2.0
 - **v0.3.0**（RELEASE，2026-09-14）：https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.3.0
+- **v0.3.1**（RELEASE，2026-09-14）：首个入库内网 Nexus 的版本 —— https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.3.1
 - 版本策略：SemVer；业务改动 → 本仓发布新版本 → 消费方 bump
+
+### 发布流程（自动化）
+
+改 `<version>`（根 pom + 子模块 parent + framework-parent 的 `lieshou-framework.version`，共 12 处）
+→ 合入 main（CI 跑 `verify` 门）→ 打 tag `vX.Y.Z`：
+
+```bash
+# tag 必须与 pom 版本一致（CI 会校验，不一致直接拒发）
+git tag -a v0.3.2 -m "0.3.2：..." && git push origin v0.3.2
+```
+
+tag pipeline 的 `deploy` stage 执行 `mvn deploy` → `maven-releases`
+（`https://nexus.ts.huntercat.cn/repository/maven-releases/cn/huntercat/...`）；
+凭证在项目 CI 变量 `NEXUS_DEPLOY_USER` / `NEXUS_DEPLOY_PASS`，不落仓库。
 
 ## 产品线关系
 
