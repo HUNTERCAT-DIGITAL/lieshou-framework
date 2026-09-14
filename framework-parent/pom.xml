@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<!--
+  消费方契约（10 个服务仓）：
+    1. <parent> 用 <relativePath>../../framework/framework-parent/pom.xml</relativePath>
+    2. 删除本仓自己的 services/pom.xml（BOM / pluginManagement 已上收到本文件）
+    3. 不得依赖自身的 <version> 来表达 framework 版本（framework-* 版本已用字面量 property 免疫）
+-->
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.7</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>cn.huntercat</groupId>
+    <artifactId>framework-parent</artifactId>
+    <version>0.3.0</version>
+    <packaging>pom</packaging>
+    <name>framework-parent</name>
+    <description>lieshou-cloud 10 个服务仓共用的 parent/BOM（lieshou-framework 模块自身由根 pom 管理，两份清单需同步）</description>
+
+    <properties>
+        <!-- ===== Java ===== -->
+        <java.version>21</java.version>
+        <maven.compiler.release>21</maven.compiler.release>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
+
+        <!-- ===== Spring 栈 ===== -->
+        <spring-boot.version>3.5.7</spring-boot.version>
+        <spring-cloud.version>2023.0.5</spring-cloud.version>
+        <spring-cloud-alibaba.version>2023.0.1.0</spring-cloud-alibaba.version>
+
+        <!-- ===== 工程规约工具 ===== -->
+        <spotless.version>2.43.0</spotless.version>
+        <jacoco.version>0.8.12</jacoco.version>
+        <!-- JaCoCo 覆盖率包根（消费方包根不同时可自行覆盖） -->
+        <jacoco.includes>cn/huntercat/lieshoucloudpro/**/*.class</jacoco.includes>
+
+        <!-- ===== OpenAPI / SpringDoc（Phase 5 跨端契约） ===== -->
+        <springdoc.version>2.8.17</springdoc.version>
+
+        <!-- ===== Spring Security / JWT（Phase 5 闭环鉴权） ===== -->
+        <jjwt.version>0.12.6</jjwt.version>
+
+        <!-- ===== 测试 ===== -->
+        <h2.version>2.2.224</h2.version>
+
+        <!-- Testcontainers 版本；覆盖理由与 BOM 声明顺序见下方 dependencyManagement 注释 -->
+        <testcontainers.version>1.21.4</testcontainers.version>
+
+        <!-- ===== CSV 导入（数据导入工具 · Phase 9） ===== -->
+        <commons-csv.version>1.12.0</commons-csv.version>
+
+        <!-- ===== Apache POI（Excel 导入导出 · 行业服务 CRM/进销存） ===== -->
+        <poi.version>5.5.1</poi.version>
+
+        <!-- lieshou-framework 模块版本：显式字面量。
+             不要改成 project.version 表达式 —— 继承后的 dependencyManagement 在消费方上下文插值，
+             消费方一旦自带 <version> 就会把 framework-* 解析成错版本。
+             本值与 <project> 自身的 <version> 必须一致。 -->
+        <lieshou-framework.version>0.3.0</lieshou-framework.version>
+
+        <!-- ===== 阿里云短信（dysmsapi · 验证码通道 · Phase 2） ===== -->
+        <aliyun.dysmsapi.version>4.1.1</aliyun.dysmsapi.version>
+
+        <!-- ===== Project ===== -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    </properties>
+
+    <!-- ============================================================
+         集中管理所有 BOM，子模块不再重复
+         ============================================================ -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- Testcontainers BOM：**必须排在最前**（Maven dependencyManagement 先声明者胜）
+                 覆盖 spring-boot 管理的 1.21.3 → 1.21.4（修复 Docker Desktop socket 代理空 Host 400）
+                 仅设属性无效（Maven 3.9 下 BOM 内部属性优先于外部覆盖） -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Spring Boot BOM -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Spring Cloud BOM -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Spring Cloud Alibaba BOM -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- H2 in-memory DB for @DataJpaTest -->
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>${h2.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <!-- Apache Commons CSV（CSV 导入解析） -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-csv</artifactId>
+                <version>${commons-csv.version}</version>
+            </dependency>
+            <!-- 阿里云短信 SDK（验证码发送 · ADR-0023 Phase 2） -->
+            <dependency>
+                <groupId>com.aliyun</groupId>
+                <artifactId>dysmsapi20170525</artifactId>
+                <version>${aliyun.dysmsapi.version}</version>
+            </dependency>
+            <!-- Apache POI（Excel 导入导出 · 行业服务 CRM/进销存） -->
+            <dependency>
+                <groupId>org.apache.poi</groupId>
+                <artifactId>poi-ooxml</artifactId>
+                <version>${poi.version}</version>
+            </dependency>
+            <!-- SpringDoc OpenAPI 统一版本 -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+            <!-- jjwt 共享版本 -->
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+
+            <!-- lieshou-framework 全 9 模块（版本见 property lieshou-framework.version） -->
+            <dependency>
+                <groupId>cn.huntercat</groupId>
+                <artifactId>framework-ai</artifactId>
+                <version>${lieshou-framework.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.huntercat</groupId>
+                <artifactId>framework-jwt</artifactId>
+                <version>${lieshou-framework.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.huntercat</groupId>
+                <artifactId>framework-common</artifactId>
+                <version>${lieshou-framework.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.huntercat</groupId>
+                <artifactId>framework-domain</artifactId>
+                <version>${lieshou-framework.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.huntercat</groupId>
+                <artifactId>framework-service</artifactId>
+                <version>${lieshou-framework.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.huntercat</groupId>
+                <artifactId>framework-approval</artifactId>
+                <version>${lieshou-framework.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.huntercat</groupId>
+                <artifactId>framework-rules</artifactId>
+                <version>${lieshou-framework.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.huntercat</groupId>
+                <artifactId>framework-auth</artifactId>
+                <version>${lieshou-framework.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.huntercat</groupId>
+                <artifactId>framework-i18n</artifactId>
+                <version>${lieshou-framework.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!-- Spring Boot Maven Plugin 由子模块自己用 -->
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                </plugin>
+                <!-- Maven 3.8 默认 surefire 2.12.4 不识别 JUnit5 → 显式 3.2.5（2026-09 i18n 迁移时发现） -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.2.5</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
+                    <configuration>
+                        <release>${maven.compiler.release}</release>
+                        <parameters>${maven.compiler.parameters}</parameters>
+                    </configuration>
+                </plugin>
+
+                <!-- ============================================================
+                     Spotless: Java 端代码格式化与导入顺序
+                     ============================================================ -->
+                <plugin>
+                    <groupId>com.diffplug.spotless</groupId>
+                    <artifactId>spotless-maven-plugin</artifactId>
+                    <version>${spotless.version}</version>
+                    <configuration>
+                        <java>
+                            <googleJavaFormat>
+                                <style>GOOGLE</style>
+                            </googleJavaFormat>
+                            <removeUnusedImports/>
+                            <importOrder>
+                                <order>org.springframework,org.springframework.cloud,com.alibaba.cloud,jakarta,org,com,lombok,\#</order>
+                            </importOrder>
+                        </java>
+                    </configuration>
+                </plugin>
+
+                <!-- ============================================================
+                     JaCoCo: 后端测试覆盖率收集 + threshold check
+                     起步期：BUNDLE LINE ≥ 40%（CI 报告但不阻断；Maven 配置中不开启 rule 强制）
+                     成熟期：将 minimum 提到 0.60，并把 rule 放到 execution 强制
+                     ============================================================ -->
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco.version}</version>
+                    <configuration>
+                        <includes>
+                            <include>${jacoco.includes}</include>
+                        </includes>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <!--
+              激活 spotless：所有子模块在 `mvn verify` 时自动跑 `spotless:check`。
+              失败则中断 verify（PR 不能合）。本地开发用 `mvn spotless:apply` 自动修。
+            -->
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>verify</phase>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+              激活 JaCoCo：所有子模块在 `mvn test` 阶段 prepare-agent 收集覆盖率，
+              `mvn verify` 阶段生成 report。
+              child <jacoco:report> 默认输出 target/site/jacoco/index.html
+              并写 target/jacoco.exec（默认）
+            -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>default-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
