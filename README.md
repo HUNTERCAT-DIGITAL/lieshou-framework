@@ -87,6 +87,22 @@ mvn -B -ntp -DskipTests install
 </dependency>
 ```
 
+### 源码跳转（IDE 里看 framework 源码）
+
+制品自带 `-sources.jar`（**0.3.2 起**），所以删掉 framework submodule 后仍能跳进源码：
+
+```bash
+mvn -B -ntp dependency:sources      # 或在 IDE 里打开「下载源码」开关
+dependency:get -Dartifact=cn.huntercat:framework-common:0.3.2:jar:sources   # 单取某个模块
+```
+
+### 排障
+
+- **报 `Missing: cn.huntercat:framework-*:jar:x.y.z` 但 Nexus 上明明有**：本地 `*.lastUpdated` 负缓存
+  （Nexus 代理曾不可用的窗口会写下这些标记）→ `mvn -U ...`，或 `find ~/.m2/repository -name '*.lastUpdated' -delete`
+- **报 PKIX / 证书不受信**：JVM 未信任内网 Caddy CA → 跑 `client-setup.sh`，或手工 `keytool -importcert`
+- 其余（EULA 403 / 匿名读 / 负缓存 / 清理策略等）见 **`/srv/nexus/README.md` §8 排障**（单一出处，本仓不重复）
+
 ## 发布
 
 - **v0.1.0**（RELEASE，2026-08）：https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.1.0
@@ -109,6 +125,12 @@ git tag -a v0.3.2 -m "0.3.2：..." && git push origin v0.3.2
 tag pipeline 的 `deploy` stage 执行 `mvn deploy` → `maven-releases`
 （`https://nexus.ts.huntercat.cn/repository/maven-releases/cn/huntercat/...`）；
 凭证在项目 CI 变量 `NEXUS_DEPLOY_USER` / `NEXUS_DEPLOY_PASS`，不落仓库。
+
+> ⚠️ `deploy` **只认语义化 tag** `vX.Y.Z`。里程碑锚点 tag（`release-*`、`<主题>-YYYY-MM`）只跑 `verify`，
+> 不触发发布 —— 否则会被 tag↔pom 版本校验判为不一致而把整条 pipeline 变红。
+>
+> 另：`maven-releases` **禁止重发**（同一坐标永不重新发布）。漏发内容只能发下一个 patch 版本，
+> 例：0.3.1 漏了 sources → 0.3.2 补上，0.3.1 已发布的字节一个不改。
 
 ## 产品线关系
 
