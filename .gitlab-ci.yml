@@ -18,6 +18,20 @@ verify:
   script:
     - java -version
     - mvn -B -ntp verify
+    # 防漂移：两份 framework-* 清单必须同序等长；三处版本号必须一致
+    - |
+      set -e
+      awk '/^ *<dependencyManagement>/,/^ *<\/dependencyManagement>/' pom.xml | grep -o '<artifactId>framework-[a-z0-9-]*</artifactId>' > /tmp/dm-root.txt
+      awk '/^ *<dependencyManagement>/,/^ *<\/dependencyManagement>/' framework-parent/pom.xml | grep -o '<artifactId>framework-[a-z0-9-]*</artifactId>' > /tmp/dm-parent.txt
+      diff -u /tmp/dm-root.txt /tmp/dm-parent.txt
+      root_v=$(grep -A1 '<artifactId>lieshou-framework</artifactId>' pom.xml | tail -1 | sed -E 's/.*<version>([^<]+)<\/version>.*/\1/')
+      fp_v=$(grep -A1 '<artifactId>framework-parent</artifactId>' framework-parent/pom.xml | tail -1 | sed -E 's/.*<version>([^<]+)<\/version>.*/\1/')
+      prop_v=$(sed -n 's/.*<lieshou-framework\.version>\([^<]*\)<\/lieshou-framework\.version>.*/\1/p' framework-parent/pom.xml)
+      [ "$root_v" = "$fp_v" ] && [ "$root_v" = "$prop_v" ] || { echo "❌ 版本漂移 root=$root_v parent=$fp_v prop=$prop_v"; exit 1; }
+      for m in $(sed -n '/<modules>/,/<\/modules>/p' pom.xml | grep -oP '(?<=<module>)[^<]+' | grep -v '^framework-parent$'); do
+        grep -q "<artifactId>${m}</artifactId>" /tmp/dm-root.txt || { echo "❌ 模块 $m 未出现在根 pom 的 dependencyManagement"; exit 1; }
+      done
+      echo "✅ framework-* 清单一致（$(wc -l < /tmp/dm-root.txt) 条），版本三处一致（$root_v）"
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'

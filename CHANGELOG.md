@@ -4,6 +4,42 @@
 > 公共 API 变更（包移动 / 类删除 / 签名变化）必须在此记录，消费方升级前对照评估适配范围。
 > 格式：`## <版本/区间>` → `### 破坏性变更` / `### 新增` / `### 修复`。
 
+## 0.3.0（2026-09-14）
+
+### 破坏性变更
+- **版本号 `0.2.0 → 0.3.0`**（根 pom + 9 个子模块的 parent 引用 + framework-parent，共 12 处字面量已同步）
+  - 适配：消费方 `<parent>` 的 `<version>` 改为 `0.3.0`；`framework-*` 依赖**删除**自带 `<version>`
+    （版本由 framework-parent 的 BOM 提供）
+- **旧 parent 坐标 `lieshoucloud-services-open`（Gen1）/ `lieshoucloud-services`（Gen2）正式废弃**
+  - 适配：10 个服务仓删除自己的 `services/pom.xml`，`<parent>` 改指
+    `cn.huntercat:framework-parent:0.3.0`，`<relativePath>` 用
+    `../../framework/framework-parent/pom.xml`
+- `framework-parent` 剔除两条死条目 `lieshoucloud-jwt-support` / `lieshoucloud-common`
+  - 适配：无（两者均无任何模块依赖、无 java import，经 10 仓并集核对确认）
+
+### 新增
+- **`framework-parent` 模块**：lieshou-cloud 微服务统一 parent/BOM。
+  消费方（10 个服务仓）`<parent>` 引用方式：
+
+  ```xml
+  <parent>
+    <groupId>cn.huntercat</groupId>
+    <artifactId>framework-parent</artifactId>
+    <version>0.3.0</version>
+    <relativePath>../../framework/framework-parent/pom.xml</relativePath>
+  </parent>
+  ```
+
+  该模块合并了原 `lieshoucloud-services-open`（Gen1，5 仓）与 `lieshoucloud-services`（Gen2，5 仓）
+  两份同名 parent；`framework-*` 版本用字面量 property `lieshou-framework.version` 表达
+  （不要改成 `project.version`——继承后的 dependencyManagement 在消费方上下文插值）。
+
+### 修复
+- 根 pom `<dependencyManagement>` 补上缺失的 `framework-i18n`（原先 9 个模块只管理了 8 个）
+- 根 pom 的 spotless 版本改用 `${spotless.version}` property（与 framework-parent 一致，消除漂移向量）
+- 删除 `framework-common` 里对 `framework-i18n` 的冗余硬编码版本（由父 dependencyManagement 提供）
+- `.gitlab-ci.yml` 增加防漂移校验：两份 `framework-*` 清单同序等长 + 三处版本号一致
+
 ## 0.2.0（2026-09-13）
 
 ### 破坏性变更

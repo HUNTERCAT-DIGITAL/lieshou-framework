@@ -6,13 +6,13 @@
 ## 项目身份
 - 名称: lieshou-framework（猎手云核心框架）
 - 类型: Java 核心能力框架库（业务逻辑唯一源 · 上游同源）
-- 仓库: https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework（main 分支 · Apache-2.0 · 已发 v0.2.0）
-- 发布点: tag `v0.2.0` / `release-2026-09`（protected）· CI: `.gitlab-ci.yml`（runner tag `java,wqc`）
+- 仓库: https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework（main 分支 · Apache-2.0 · 0.3.0 就绪，待打 tag `v0.3.0` 并合入 main）
+- 发布点: 待打 tag `v0.3.0`（合入 main 后）/ 已存在 `release-2026-09`（protected）· CI: `.gitlab-ci.yml`（runner tag `java,wqc`）
 - 技术栈: Java 21 · Spring Boot 3.5.7 · Maven 多模块 · jjwt 0.12.6 · Spring Data JPA · Spotless(googleJavaFormat)
 
 ## 架构速览
 - 定位：三套产品线（lieshou-boot 单体 / lieshou-cloud 微服务 / lieshou-cloud-pro 商业）后端的**唯一业务逻辑源**；各端只留 Controller + 装配 + 启动。
-- 六模块（依赖方向自下而上）：`framework-jwt`（无 Web 依赖，servlet/webflux 通用）→ `framework-common`（异常/错误码/租户头/审计/权限注解）→ `framework-domain`（JPA 实体 + Repository）→ `framework-service`（用户/租户/角色/邀请码/通知/验证码/审计领域服务）→ `framework-approval`（审批状态机 + 端口）→ `framework-auth`（认证业务 + UserAuthPort 端口）。
+- 十模块（依赖方向自下而上）：`framework-jwt`（无 Web 依赖，servlet/webflux 通用）/ `framework-i18n`（多语言门面 + 自动装配）/ `framework-ai`（AI 端口，无框架依赖）→ `framework-common`（异常/错误码/租户头/审计/权限注解，依赖 i18n）→ `framework-domain`（JPA 实体 + Repository）→ `framework-service`（用户/租户/角色/邀请码/通知/验证码/审计领域服务）/ `framework-approval`（审批状态机 + 端口）/ `framework-rules`（规则引擎实体 + Repository）→ `framework-auth`（认证业务 + UserAuthPort 端口）；另 `framework-parent` 为消费方 parent/BOM（仅 pom，无代码）。
 - 端口-适配器模式：framework 只定义端口（UserAuthPort / CodeSender / PermissionChecker / AuditRecorder / UserQueryPort / NotifierPort），单体本地 Adapter / 微服务 Feign Client 装配。
 
 ## 关键约定
@@ -22,13 +22,13 @@
 - Commit：Conventional Commits；业务改动 → 发新版本 → 消费方 bump。
 
 ## 当前阶段
-- v0.2.0 已 RELEASE（九模块 · 130 测试全过 · `mvn -B -ntp verify` 即门，GitLab pipeline 强制）。
+- 0.3.0 就绪（待打 tag `v0.3.0` 并合入 main）：十模块 · 130 测试全过 · `mvn -B -ntp verify` 即门，GitLab pipeline 强制。
 - 历史决策原文待补：索引与摘要见 `docs/adr/README.md`（本仓不发明决策内容）。
 - ADR-0044 上收进行中：阶段 1-3（角色/邀请码 → 租户 → 用户生命周期）已完成并入库；README 已同步。
 - 认证扩展（ADR-0023）：登录/验证码/注册/重置密码/切换租户/多租户选项已同源；默认租户可配置（`auth.default-tenant-code`，缺省 huntercat）。
 
 ## 待办
-- [ ] 规划 0.2.0 发版（v0.1.0 后已积压 ADR-0044 上收 + 认证扩展等大量未发版功能）
+- [x] 0.3.0 发版内容已就绪（待打 tag v0.3.0 并合入 main）
 - [ ] ⚠️ 消费方适配（2026-09 变更，见 CHANGELOG）：artifactId 改名 `lieshou-framework`、`UserAuthPort` 异常契约（业务否定抛 BaseException）、密码策略 ≥8 位+字母数字 —— lieshou-boot / auth-services / user-services 等需同步
 
 ## 关键决策
