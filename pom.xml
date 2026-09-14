@@ -13,12 +13,13 @@
 
   <groupId>cn.huntercat</groupId>
   <artifactId>lieshou-framework</artifactId>
-  <version>0.2.0</version>
+  <version>0.3.0</version>
   <packaging>pom</packaging>
   <name>lieshou-framework</name>
   <description>猎手云产品线核心框架（lieshou-boot 单体 / lieshou-cloud 微服务 共同上游·同源唯一）</description>
 
   <modules>
+    <module>framework-parent</module>
     <module>framework-ai</module>
     <module>framework-jwt</module>
     <module>framework-common</module>
@@ -32,11 +33,15 @@
 
   <properties>
     <java.version>21</java.version>
+    <spotless.version>2.43.0</spotless.version>
     <jjwt.version>0.12.6</jjwt.version>
   </properties>
 
 
   <dependencyManagement>
+    <!-- ⚠️ 本清单与 framework-parent/pom.xml 的 framework-* 清单必须逐条同步：
+         本清单服务于 framework 模块自身（各子模块的 NO-VERSION 依赖靠它兜底）；
+         framework-parent/pom.xml 服务于 10 个服务仓。改一处必须改另一处。 -->
     <dependencies>
       <dependency>
         <groupId>cn.huntercat</groupId>
@@ -78,6 +83,11 @@
         <artifactId>framework-auth</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>cn.huntercat</groupId>
+        <artifactId>framework-i18n</artifactId>
+        <version>${project.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -87,7 +97,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>2.43.0</version>
+        <version>${spotless.version}</version>
         <configuration>
           <java>
             <googleJavaFormat>

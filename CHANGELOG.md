@@ -4,6 +4,34 @@
 > 公共 API 变更（包移动 / 类删除 / 签名变化）必须在此记录，消费方升级前对照评估适配范围。
 > 格式：`## <版本/区间>` → `### 破坏性变更` / `### 新增` / `### 修复`。
 
+## 0.3.0（2026-09-14）
+
+### 新增
+- **`framework-parent` 模块**：lieshou-cloud 微服务统一 parent/BOM。
+  消费方（10 个服务仓）`<parent>` 引用方式：
+
+  ```xml
+  <parent>
+    <groupId>cn.huntercat</groupId>
+    <artifactId>framework-parent</artifactId>
+    <version>0.3.0</version>
+    <relativePath>../../framework/framework-parent/pom.xml</relativePath>
+  </parent>
+  ```
+
+  该模块合并了原 `lieshoucloud-services-open`（Gen1，5 仓）与 `lieshoucloud-services`（Gen2，5 仓）
+  两份同名 parent；消费方需删除自己的 `services/pom.xml`。
+
+### 修复
+- 根 pom `<dependencyManagement>` 补上缺失的 `framework-i18n`（原只管理 8/9 个模块）
+- 根 pom 的 spotless 版本改用 `${spotless.version}` property（与 framework-parent 一致，消除漂移向量）
+- `framework-parent` 剔除两条死条目：`lieshoucloud-jwt-support`、`lieshoucloud-common`
+  （两者均无任何模块依赖 / 无 java import，经 10 仓并集核对确认）
+
+### 破坏性变更
+- 版本号 `0.2.0 → 0.3.0`；原 `lieShou-framework → lieshou-framework` 的改名遗留
+  （`lieshoucloud-services*` 两个旧 parent 坐标）在本版本**正式废弃**
+
 ## 0.2.0（2026-09-13）
 
 ### 破坏性变更
