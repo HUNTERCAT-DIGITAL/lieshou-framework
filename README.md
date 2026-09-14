@@ -2,12 +2,12 @@
 
 > 猎手云产品线的**核心能力框架**（上游同源唯一）：认证 / JWT / 统一异常 / 审计 / 权限 / 领域模型 / 审批。
 > **lieshou-boot（单体）与 lieshou-cloud（微服务）共用的薄壳底座**——业务逻辑只在此维护，两端装配引用。
-> **v0.3.0（RELEASE，2026-09-14）** · 十模块 · 130 测试全过
+> **v0.3.2（RELEASE，2026-09-14）** · 十模块 · 130 测试全过
 
 <p align="center">
   <img src="https://img.shields.io/badge/Java-21-orange" alt="Java 21"/>
   <img src="https://img.shields.io/badge/Spring_Boot-3.5-green" alt="Spring Boot 3.5"/>
-  <img src="https://img.shields.io/badge/Version-0.3.0-blue" alt="v0.3.0"/>
+  <img src="https://img.shields.io/badge/Version-0.3.2-blue" alt="v0.3.2"/>
   <img src="https://img.shields.io/badge/License-Apache--2.0-brightgreen" alt="Apache-2.0"/>
 </p>
 
@@ -21,7 +21,7 @@ Spring Cloud      →  lieshou-cloud      微服务/分布式（Framework + 服�
 
 **规则**：业务逻辑（Service / 端口 / DTO / 领域模型）只进 Framework；各端只留 Controller + 装配 + 启动。
 
-## 模块（十模块 · v0.3.0）
+## 模块（十模块 · v0.3.2）
 
 | 模块 | 内容 | 依赖 |
 | --- | --- | --- |
@@ -77,7 +77,7 @@ mvn -B -ntp -DskipTests install
 <parent>
   <groupId>cn.huntercat</groupId>
   <artifactId>framework-parent</artifactId>
-  <version>0.3.1</version>
+  <version>0.3.2</version>
   <!-- 方式 A：删掉 relativePath；方式 B（源码联调）：../../framework/framework-parent/pom.xml -->
 </parent>
 
@@ -93,6 +93,7 @@ mvn -B -ntp -DskipTests install
 - **v0.2.0**（RELEASE，2026-09-13）：https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.2.0
 - **v0.3.0**（RELEASE，2026-09-14）：https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.3.0
 - **v0.3.1**（RELEASE，2026-09-14）：首个入库内网 Nexus 的版本 —— https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.3.1
+- **v0.3.2**（RELEASE，2026-09-14）：随制品发布 **sources jar**（9 个 `framework-*`）—— 删掉 framework submodule 后 IDE 仍可跳进源码（`mvn dependency:sources`）—— https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.3.2
 - 版本策略：SemVer；业务改动 → 本仓发布新版本 → 消费方 bump
 
 ### 发布流程（自动化）
