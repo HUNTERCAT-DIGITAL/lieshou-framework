@@ -26,6 +26,20 @@
     <description>lieshou-cloud 10 个服务仓共用的 parent/BOM（lieshou-framework 模块自身由根 pom 管理，两份清单需同步）</description>
 
     <!-- 本 pom 不继承根 pom（直接继承 spring-boot-starter-parent），故分发地址需各自声明 -->
+    <!--
+      ⚠️ 本 pom 是**消费方**的 <parent>（10 个服务仓 + 单体），而 Maven 的
+        distributionManagement 会被**继承**—— 所以消费方在自己仓里跑 `mvn deploy`
+        会把**服务应用 jar** 推进 framework 的 release 仓。
+        实测（2026-09-14）：lieshoucloud-user / lieshoucloud-auth / lieshoucloud-approval
+        的 0.3.1 就这幺进了 maven-releases（其 pom 的 parent 是 framework-parent:0.3.1）。
+
+      这里不能删：framework-parent 不继承根 pom（直接挂 spring-boot-starter-parent），
+        删了它自己就发不出去，而消费方需要从 Nexus 解析它作为 parent。
+
+      根治：消费方不再继承 framework-parent —— 改 <parent>=huntercat-build-parent
+        + <dependencyManagement> import lieshou-framework-bom（拆分后本 pom 回到只服务 framework 自己）。
+        详见 AGENTS.md 待办与 huntercat-ai-kit 的制品化供应链 spec。
+    -->
     <distributionManagement>
         <repository>
             <id>nexus</id>

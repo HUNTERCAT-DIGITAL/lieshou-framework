@@ -49,6 +49,11 @@
       `lieshou-framework-bom`(dependencyManagement, `import` scope)
 - [ ] 共享表迁移上收进 `framework-domain` + 实体↔schema 校验门（Testcontainers + `hbm2ddl validate`，建议落 ADR-0045）
 - [ ] 消费方切 Nexus：删 `services/*/framework` submodule、清 `<relativePath>`、上门禁（禁内联上游源码 / 禁 submodule 残留 / 交付仓内单版本）
+- [ ] 🔴 **`distributionManagement` 继承泄漏（2026-09-14 实测）**：`framework-parent` 是消费方的 `<parent>`，
+      而 Maven 会继承 `distributionManagement` → 在消费方仓跑 `mvn deploy` 会把**服务应用 jar** 推进
+      framework 的 `maven-releases`。实测残留 `lieshoucloud-user` / `lieshoucloud-auth` / `lieshoucloud-approval`
+      的 `0.3.1`（各 pom+jar+校验和，其 pom 的 parent 是 `framework-parent:0.3.1`）—— **待从 Nexus 清理**。
+      根治 = 消费方不再继承 `framework-parent`（即上一条的 parent/BOM 拆分）。
 - [ ] ⚠️ 消费方适配（2026-09 变更，见 CHANGELOG）：artifactId 改名 `lieshou-framework`、`UserAuthPort` 异常契约（业务否定抛 BaseException）、密码策略 ≥8 位+字母数字 —— lieshou-boot / auth-services / user-services 等需同步
 - [ ] 单体 `lieshou-standalone` 的 framework pin 停在 `8993195`（v0.1.0-23）· **落后 36 提交**，跨 v0.2.0 三处破坏性变更 + v0.3.0 parent 重构 —— 需独立适配（10 个微服务仓已齐步 v0.3.x）
 - [ ] runner 单并发代价：`/srv/gitlab-runner/config/config.toml` `concurrent = 1` 挂 83 个项目，
