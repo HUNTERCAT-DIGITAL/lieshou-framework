@@ -4,6 +4,19 @@
 > 公共 API 变更（包移动 / 类删除 / 签名变化）必须在此记录，消费方升级前对照评估适配范围。
 > 格式：`## <版本/区间>` → `### 破坏性变更` / `### 新增` / `### 修复`。
 
+## 0.3.1（2026-09-14）
+
+### 新增
+- **制品分发到内网 Nexus**：根 pom / `framework-parent` 声明 `distributionManagement`
+  （`https://nexus.ts.huntercat.cn/repository/maven-releases/`）；GitLab CI 新增 `deploy` stage，
+  **仅 `v*` tag 触发**，并校验 tag 与 pom 版本一致（`vX.Y.Z` ⟷ `<version>X.Y.Z</version>`）。
+- 消费方从此**按坐标依赖**，不再需要 `<relativePath>` 指源码：`framework-parent` 的
+  `<relativePath>` 可删（各开发机 `~/.m2/settings.xml` 已 mirror 到 Nexus `maven-public`）。
+
+### 说明
+- **`0.3.0` 从未分发**（当时无发布链路），`0.3.1` 是首个可从私服解析的版本 —— 消费方直接升到 `0.3.1`。
+- 无公共 API 变更，无需适配代码。
+
 ## 0.3.0（2026-09-14）
 
 ### 破坏性变更
