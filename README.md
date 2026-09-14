@@ -2,7 +2,7 @@
 
 > 猎手云产品线的**核心能力框架**（上游同源唯一）：认证 / JWT / 统一异常 / 审计 / 权限 / 领域模型 / 审批。
 > **lieshou-boot（单体）与 lieshou-cloud（微服务）共用的薄壳底座**——业务逻辑只在此维护，两端装配引用。
-> **v0.3.0（RELEASE）** · 十模块 · 130 测试全过
+> **v0.3.0（就绪 · 待打 tag `v0.3.0`）** · 十模块 · 130 测试全过
 
 <p align="center">
   <img src="https://img.shields.io/badge/Java-21-orange" alt="Java 21"/>
@@ -68,17 +68,27 @@ public interface UserAuthClient extends UserAuthPort { ... }
 # 构建安装到本地 maven 仓库
 mvn -B -ntp -DskipTests install
 
-# 使用（consumer pom）
+# 使用（consumer pom）：parent 指向 framework-parent（统一 parent/BOM）
+# `framework-*` 依赖不写 <version>（由 framework-parent 的 dependencyManagement 提供）
+# 注意：<relativePath> 按两个仓库的目录布局填写，本框架仓与消费方仓平级
+<parent>
+  <groupId>cn.huntercat</groupId>
+  <artifactId>framework-parent</artifactId>
+  <version>0.3.0</version>
+  <relativePath>../../framework/framework-parent/pom.xml</relativePath>
+</parent>
+
 <dependency>
   <groupId>cn.huntercat</groupId>
   <artifactId>framework-auth</artifactId>
-  <version>0.1.0</version>
 </dependency>
 ```
 
 ## 发布
 
-- **v0.1.0**（RELEASE，2026-09）：https://github.com/HUNTERCAT-DIGITAL/lieshou-framework/releases/tag/v0.1.0
+- **v0.1.0**（RELEASE，2026-08）：https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.1.0
+- **v0.2.0**（RELEASE，2026-09-13）：https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.2.0
+- **v0.3.0**（待打 tag，2026-09-14）：https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.3.0
 - 版本策略：SemVer；业务改动 → 本仓发布新版本 → 消费方 bump
 
 ## 产品线关系
