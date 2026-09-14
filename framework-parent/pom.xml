@@ -168,6 +168,7 @@
                 <scope>runtime</scope>
             </dependency>
 
+            <!-- ⚠️ 本清单与根 pom.xml 的 framework-* 清单必须逐条同步（.gitlab-ci.yml 有校验门） -->
             <!-- lieshou-framework 全 9 模块（版本见 property lieshou-framework.version） -->
             <dependency>
                 <groupId>cn.huntercat</groupId>
