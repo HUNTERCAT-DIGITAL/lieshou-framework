@@ -43,7 +43,9 @@ deploy:
   stage: deploy
   timeout: 30m
   rules:
-    - if: '$CI_COMMIT_TAG'
+    # 只认语义化版本 tag：里程碑锚点 tag（release-* / <主题>-YYYY-MM）不应触发发布，
+    # 否则它们会被下面的 tag↔pom 版本校验判为不一致 → 整条 pipeline 误红。
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
   script:
     # tag 必须与 pom 版本一致，否则拒发（防止 v0.4.0 下发成 0.3.1）
     - |
