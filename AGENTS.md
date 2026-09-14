@@ -22,14 +22,17 @@
 - Commit：Conventional Commits；业务改动 → 发新版本 → 消费方 bump。
 
 ## 当前阶段
-- v0.3.0 已 RELEASE（2026-09-14，十模块 · 130 测试全过 · `mvn -B -ntp verify` 即门，GitLab pipeline 强制）。
+- v0.3.1 已发布（2026-09-14，制品入内网 Nexus `maven-releases`，消费方可按坐标依赖）。
+  前序 v0.3.0 十模块 · 130 测试全过（`mvn -B -ntp verify` 即门，GitLab pipeline 强制）。
 - 历史决策原文待补：索引与摘要见 `docs/adr/README.md`（本仓不发明决策内容）。
 - ADR-0044 上收进行中：阶段 1-3（角色/邀请码 → 租户 → 用户生命周期）已完成并入库；README 已同步。
 - 认证扩展（ADR-0023）：登录/验证码/注册/重置密码/切换租户/多租户选项已同源；默认租户可配置（`auth.default-tenant-code`，缺省 huntercat）。
 
 ## 待办
 - [x] v0.3.0 已发布（2026-09-14，tag `v0.3.0` 已创建并合入 main）
-- [ ] 制品分发缺失：0.3.0 仅有 tag，无 Package Registry / Nexus 发布（3 份 pom 无 `distributionManagement`，CI 无 deploy 阶段）—— 消费方仍靠本地 `<relativePath>` + `mvn install`
+- [x] 制品分发（2026-09-14）：Nexus `https://nexus.ts.huntercat.cn`，CI `deploy` stage 仅 tag 触发；
+      runner 已 map `nexus.ts.huntercat.cn` + 挂载卷自带 `caddy-root.crt`（job 里 keytool 导入）；
+      凭证 = 项目 CI 变量 `NEXUS_DEPLOY_USER`/`NEXUS_DEPLOY_PASS`（protected+masked）
 - [ ] ⚠️ 消费方适配（2026-09 变更，见 CHANGELOG）：artifactId 改名 `lieshou-framework`、`UserAuthPort` 异常契约（业务否定抛 BaseException）、密码策略 ≥8 位+字母数字 —— lieshou-boot / auth-services / user-services 等需同步
 
 ## 关键决策

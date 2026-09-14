@@ -1,7 +1,7 @@
 # lieshou-framework 质量门禁（GitLab CI · 2026-09）
 # 前置：huntercat-digital 组级 docker runner（mesh-dell · tags: java,wqc）
 # 门 = mvn -B -ntp verify（含 spotless check）——不留"跳过格式"的假绿
-stages: [verify]
+stages: [verify, deploy]
 
 variables:
   # 内网 Caddy 自签证书不在 job 容器信任库 → 放行 git clone（对齐 mobile-web 先例）
@@ -36,3 +36,23 @@ verify:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
     - if: '$CI_COMMIT_TAG'
+
+# 制品发布：仅 tag 触发，发到内网 Nexus maven-releases（凭证在项目 CI 变量 NEXUS_DEPLOY_*）
+# 依赖：runner 已 map nexus.ts.huntercat.cn；/root/.m2/caddy-root.crt 为内部 CA（挂载卷自带）
+deploy:
+  stage: deploy
+  timeout: 30m
+  rules:
+    - if: '$CI_COMMIT_TAG'
+  script:
+    # tag 必须与 pom 版本一致，否则拒发（防止 v0.4.0 下发成 0.3.1）
+    - |
+      set -e
+      ver=$(grep -A1 '<artifactId>lieshou-framework</artifactId>' pom.xml | tail -1 | sed -E 's/.*<version>([^<]+)<\/version>.*/\1/')
+      [ "$CI_COMMIT_TAG" = "v$ver" ] || { echo "❌ tag $CI_COMMIT_TAG 与 pom 版本 v$ver 不一致"; exit 1; }
+      echo "发布 cn.huntercat:lieshou-framework:$ver → Nexus maven-releases"
+    # 内部 CA 进 JVM 信任库（job 容器不认 Caddy 自签 CA）
+    - keytool -importcert -noprompt -trustcacerts -alias caddy-root -file /root/.m2/caddy-root.crt -keystore "$JAVA_HOME/lib/security/cacerts" -storepass changeit
+    # 只带 <servers>，localRepository 仍走挂载卷 /root/.m2/repository
+    - printf '<settings><servers><server><id>nexus</id><username>%s</username><password>%s</password></server></servers></settings>' "$NEXUS_DEPLOY_USER" "$NEXUS_DEPLOY_PASS" > /tmp/ci-settings.xml
+    - mvn -B -ntp -s /tmp/ci-settings.xml deploy
