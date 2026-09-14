@@ -338,7 +338,14 @@ public class AuthService {
   /**
    * 按渠道查用户（SMS→phone / EMAIL→email）。
    *
-   * <p>端口返回 null = 用户不存在（业务否定）；抛异常 = user-service 故障 → 503，不吞成 null。
+   * <p>端口返回 null 或抛 {@link BaseException} NOT_FOUND = 用户不存在（业务否定，交调用方走 USER_NOT_FOUND）； 其他异常 =
+   * user-service 故障 → 503，不吞成 null。
+   *
+   * <p><b>2026-09-14 生产事故修复</b>：user-service 对“该租户下无此手机号”返 404 {@code NOT_FOUND}， 经 {@code
+   * UserAuthErrorDecoder} 解码为 {@code BaseException}；而 {@code BaseException} 继承 {@link
+   * RuntimeException}，原先只 catch RuntimeException 会把业务否定误判为依赖故障 → 验证码登录/重置密码 一律 503「用户服务暂不可用」（密码登录的
+   * {@link #findUserForLogin} 有 isNotFound 分支，故不受影响）。 这里对齐 {@link #findUserForLogin}：业务否定返回
+   * null，只把真依赖故障映射 503。
    */
   private UserAuthView findUserByTarget(String tenantCode, String channel, String target) {
     try {
@@ -346,6 +353,11 @@ public class AuthService {
         return userClient.findByTenantAndPhone(tenantCode, target);
       }
       return userClient.findByEmail(target);
+    } catch (BaseException e) {
+      if (isNotFound(e)) {
+        return null; // 该租户下无此手机号/邮箱 → 业务否定，调用方抛 USER_NOT_FOUND(404)
+      }
+      throw e; // 其他业务否定（如 TENANT_DISABLED）透传错误码
     } catch (RuntimeException e) {
       log.warn("findUserByTarget 查询失败 channel={} target={}", channel, target, e);
       throw new BaseException(ErrorCode.SERVICE_UNAVAILABLE, UPSTREAM_UNAVAILABLE, e);

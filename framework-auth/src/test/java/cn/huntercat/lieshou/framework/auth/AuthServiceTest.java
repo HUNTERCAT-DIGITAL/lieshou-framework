@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.LoginRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.LoginWithCodeRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.RegisterRequest;
+import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.ResetPasswordRequest;
 import cn.huntercat.lieshou.framework.auth.dto.AuthDtos.TokenResponse;
 import cn.huntercat.lieshou.framework.common.api.BaseException;
 import cn.huntercat.lieshou.framework.common.api.ErrorCode;
@@ -340,6 +341,44 @@ class AuthServiceTest {
     when(userClient.tenantOptions("admin")).thenThrow(new RuntimeException("connect timeout"));
 
     assertThat(authService.tenantOptions("admin")).isEmpty();
+  }
+
+  /**
+   * 验证码登录：user-service 返回 BaseException NOT_FOUND（Feign 404，该租户下手机号无账号）→ USER_NOT_FOUND(404)， 不是
+   * 503。
+   *
+   * <p>2026-09-14 生产事故（dwjk · issue 排查）：/api/auth/login/code 对未注册手机号返回 503「用户服务暂不可用」， 根因是
+   * findUserByTarget 只 catch RuntimeException —— BaseException 继承 RuntimeException，把业务否定 NOT_FOUND
+   * 也当成了依赖故障。密码登录的 findUserForLogin 有 isNotFound 分支，所以只有验证码登录/重置密码中招。
+   */
+  @Test
+  void loginWithCode_phoneNotFound_throwsUserNotFound() {
+    when(userClient.findByTenantAndPhone("huntercat", "13900000000"))
+        .thenThrow(new BaseException(ErrorCode.NOT_FOUND, "用户不存在"));
+
+    assertThatThrownBy(
+            () ->
+                authService.loginWithCode(
+                    new LoginWithCodeRequest("huntercat", "SMS", "13900000000", "123456")))
+        .isInstanceOf(BaseException.class)
+        .satisfies(e -> assertThat(((BaseException) e).errorCode()).isEqualTo("USER_NOT_FOUND"))
+        .hasMessage("error.auth.user_not_found");
+  }
+
+  /** 重置密码：Email 通道无账号（BaseException NOT_FOUND）→ USER_NOT_FOUND，不是 503（同一 findUserByTarget） */
+  @Test
+  void resetPassword_emailNotFound_throwsUserNotFound() {
+    when(userClient.findByEmail("nobody@example.com"))
+        .thenThrow(new BaseException(ErrorCode.NOT_FOUND, "用户不存在"));
+
+    assertThatThrownBy(
+            () ->
+                authService.resetPassword(
+                    new ResetPasswordRequest(
+                        "huntercat", "EMAIL", "nobody@example.com", "123456", "Newpw12345")))
+        .isInstanceOf(BaseException.class)
+        .satisfies(e -> assertThat(((BaseException) e).errorCode()).isEqualTo("USER_NOT_FOUND"))
+        .hasMessage("error.auth.user_not_found");
   }
 
   /** 验证码登录：业务否定（BaseException INVALID_CODE）→ 透传错误码，不是 503 */
