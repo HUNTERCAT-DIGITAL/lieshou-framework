@@ -4,6 +4,19 @@
 > 公共 API 变更（包移动 / 类删除 / 签名变化）必须在此记录，消费方升级前对照评估适配范围。
 > 格式：`## <版本/区间>` → `### 破坏性变更` / `### 新增` / `### 修复`。
 
+## 0.3.2（2026-09-14）
+
+### 新增
+- **随制品发布 sources jar**：根 pom 引入 `maven-source-plugin`（`jar-no-fork` 绑 `package`），
+  9 个 `framework-*` 模块各产出 `-sources.jar` 并 deploy 到 Nexus。
+  消费方删掉 framework submodule 后，IDE 里仍能跳进 framework 源码
+  （`mvn dependency:sources`，或 IDE 自动下载 sources）。
+
+### 说明
+- `0.3.1` 的制品已入库但**缺 sources**（`maven-releases` 禁止重发），故以 `0.3.2` 补齐，
+  不修改 `0.3.1` 已发布的任何字节。
+- 无公共 API 变更，消费方无需适配代码。
+
 ## 0.3.1（2026-09-14）
 
 ### 新增
