@@ -77,7 +77,7 @@ mvn -B -ntp -DskipTests install
 <parent>
   <groupId>cn.huntercat</groupId>
   <artifactId>framework-parent</artifactId>
-  <version>0.3.1</version>
+  <version>0.3.2</version>
   <!-- 方式 A：删掉 relativePath；方式 B（源码联调）：../../framework/framework-parent/pom.xml -->
 </parent>
 
@@ -93,6 +93,7 @@ mvn -B -ntp -DskipTests install
 - **v0.2.0**（RELEASE，2026-09-13）：https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.2.0
 - **v0.3.0**（RELEASE，2026-09-14）：https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.3.0
 - **v0.3.1**（RELEASE，2026-09-14）：首个入库内网 Nexus 的版本 —— https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.3.1
+- **v0.3.2**（RELEASE，2026-09-14）：随制品发布 **sources jar**（9 个 `framework-*`）—— 删掉 framework submodule 后 IDE 仍可跳进源码（`mvn dependency:sources`）—— https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.3.2
 - 版本策略：SemVer；业务改动 → 本仓发布新版本 → 消费方 bump
 
 ### 发布流程（自动化）
