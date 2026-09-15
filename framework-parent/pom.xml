@@ -20,7 +20,7 @@
 
     <groupId>cn.huntercat</groupId>
     <artifactId>framework-parent</artifactId>
-    <version>0.3.4</version>
+    <version>0.3.5</version>
     <packaging>pom</packaging>
     <name>framework-parent</name>
     <description>lieshou-cloud 10 个服务仓共用的 parent/BOM（lieshou-framework 模块自身由根 pom 管理，两份清单需同步）</description>
@@ -92,7 +92,7 @@
              不要改成 project.version 表达式 —— 继承后的 dependencyManagement 在消费方上下文插值，
              消费方一旦自带 <version> 就会把 framework-* 解析成错版本。
              本值与 <project> 自身的 <version> 必须一致。 -->
-        <lieshou-framework.version>0.3.4</lieshou-framework.version>
+        <lieshou-framework.version>0.3.5</lieshou-framework.version>
 
         <!-- ===== 阿里云短信（dysmsapi · 验证码通道 · Phase 2） ===== -->
         <aliyun.dysmsapi.version>4.1.1</aliyun.dysmsapi.version>
