@@ -40,7 +40,7 @@ public class Tenant {
     GENERIC,
     /** 法律行业版（律所/事务所） */
     LAYER,
-    /** LegalMind Unity 版（凌科安时联合定制 · 律师成长操作系统 · ADR-0036） */
+    /** 法律行业定制版（行业联合定制 · 律师成长操作系统 · ADR-0036） */
     LEGALMIND,
     /** 教育行业版（教育机构） */
     ZHIYE,
