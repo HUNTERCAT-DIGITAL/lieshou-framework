@@ -2,12 +2,12 @@
 
 > 猎手云产品线的**核心能力框架**（上游同源唯一）：认证 / JWT / 统一异常 / 审计 / 权限 / 领域模型 / 审批。
 > **lieshou-boot（单体）与 lieshou-cloud（微服务）共用的薄壳底座**——业务逻辑只在此维护，两端装配引用。
-> **v0.3.2（RELEASE，2026-09-14）** · 十模块 · 130 测试全过
+> **v0.3.3（RELEASE，2026-09-15）** · 十模块 · 135 测试全过
 
 <p align="center">
   <img src="https://img.shields.io/badge/Java-21-orange" alt="Java 21"/>
   <img src="https://img.shields.io/badge/Spring_Boot-3.5-green" alt="Spring Boot 3.5"/>
-  <img src="https://img.shields.io/badge/Version-0.3.2-blue" alt="v0.3.2"/>
+  <img src="https://img.shields.io/badge/Version-0.3.3-blue" alt="v0.3.3"/>
   <img src="https://img.shields.io/badge/License-Apache--2.0-brightgreen" alt="Apache-2.0"/>
 </p>
 
@@ -21,7 +21,7 @@ Spring Cloud      →  lieshou-cloud      微服务/分布式（Framework + 服�
 
 **规则**：业务逻辑（Service / 端口 / DTO / 领域模型）只进 Framework；各端只留 Controller + 装配 + 启动。
 
-## 模块（十模块 · v0.3.2）
+## 模块（十模块 · v0.3.3）
 
 | 模块 | 内容 | 依赖 |
 | --- | --- | --- |
@@ -77,7 +77,7 @@ mvn -B -ntp -DskipTests install
 <parent>
   <groupId>cn.huntercat</groupId>
   <artifactId>framework-parent</artifactId>
-  <version>0.3.2</version>
+  <version>0.3.3</version>
   <!-- 方式 A：删掉 relativePath；方式 B（源码联调）：../../framework/framework-parent/pom.xml -->
 </parent>
 
@@ -93,7 +93,7 @@ mvn -B -ntp -DskipTests install
 
 ```bash
 mvn -B -ntp dependency:sources      # 或在 IDE 里打开「下载源码」开关
-dependency:get -Dartifact=cn.huntercat:framework-common:0.3.2:jar:sources   # 单取某个模块
+dependency:get -Dartifact=cn.huntercat:framework-common:0.3.3:jar:sources   # 单取某个模块
 ```
 
 ### 排障
@@ -110,6 +110,7 @@ dependency:get -Dartifact=cn.huntercat:framework-common:0.3.2:jar:sources   # �
 - **v0.3.0**（RELEASE，2026-09-14）：https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.3.0
 - **v0.3.1**（RELEASE，2026-09-14）：首个入库内网 Nexus 的版本 —— https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.3.1
 - **v0.3.2**（RELEASE，2026-09-14）：随制品发布 **sources jar**（9 个 `framework-*`）—— 删掉 framework submodule 后 IDE 仍可跳进源码（`mvn dependency:sources`）—— https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.3.2
+- **v0.3.3**（RELEASE，2026-09-15）：把 E48 两条修复（SSE/异步断连 500 + 4xx 被吞成 500）从侧分支合入 main 并**首次随制品发布** —— 按坐标从 Nexus 解析的消费方须用 ≥ 0.3.3 —— https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework/-/tags/v0.3.3
 - 版本策略：SemVer；业务改动 → 本仓发布新版本 → 消费方 bump
 
 ### 发布流程（自动化）
@@ -119,7 +120,7 @@ dependency:get -Dartifact=cn.huntercat:framework-common:0.3.2:jar:sources   # �
 
 ```bash
 # tag 必须与 pom 版本一致（CI 会校验，不一致直接拒发）
-git tag -a v0.3.2 -m "0.3.2：..." && git push origin v0.3.2
+git tag -a v0.3.3 -m "0.3.3：..." && git push origin v0.3.3
 ```
 
 tag pipeline 的 `deploy` stage 执行 `mvn deploy` → `maven-releases`
