@@ -6,8 +6,8 @@
 ## 项目身份
 - 名称: lieshou-framework（猎手云核心框架）
 - 类型: Java 核心能力框架库（业务逻辑唯一源 · 上游同源）
-- 仓库: https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework（main 分支 · Apache-2.0 · 已发 v0.3.2）
-- 发布点: tag `v0.3.2`（最新）/ `v0.3.1` / `v0.3.0` / `release-2026-09`（均 protected）· CI: `.gitlab-ci.yml`（runner tag `java,wqc`，`mvn -B -ntp verify` + 版本防漂移门）
+- 仓库: https://gitlab.ts.huntercat.cn/huntercat-digital/lieshou-framework（main 分支 · Apache-2.0 · 已发 v0.3.3）
+- 发布点: tag `v0.3.3`（最新）/ `v0.3.2` / `v0.3.1` / `v0.3.0` / `release-2026-09`（均 protected）· CI: `.gitlab-ci.yml`（runner tag `java,wqc`，`mvn -B -ntp verify` + 版本防漂移门）
 - **制品分发: 内网 Nexus `https://nexus.ts.huntercat.cn`**（运维/接入文档 `/srv/nexus/README.md`，客户端一键接入 `client-setup.sh`）
   - 发布: `deploy` stage，**仅语义化 tag `vX.Y.Z`** 触发（`mvn deploy` → `maven-releases`）；先校验 tag==pom 版本；release 仓**禁止重发**
   - 消费: `~/.m2/settings.xml` mirror → `maven-public`，无需 `<relativePath>`；含 `-sources.jar`
@@ -26,6 +26,11 @@
 - Commit：Conventional Commits；业务改动 → 发新版本 → 消费方 bump。
 
 ## 当前阶段
+- **v0.3.3 已发布**（2026-09-15 · 十模块 · **135** 测试全过 · 本地 `mvn -B -ntp verify` 实测 35s 全绿）。
+  内容 = 把 **E48 两条修复**从侧分支（`fix/async-disconnect` / `hotfix/0.3.0-e48-async-4xx`）合入 main：
+  ① SSE/异步断连不再走 JSON 错误体（消除 500 + 二次异常）；② 兜底异常处理保留 Spring 自带 4xx 状态码。
+  ⚠️ **这两条 0.3.1/0.3.2 都不含**（当时只发侧分支、未进 main）→ 凡“删 submodule 改走 Nexus”的消费方必须 ≥ 0.3.3。
+  代码等价性已实测：`git diff 4171c41 v0.3.3 -- '*.java'` **为空**。
 - **v0.3.2 已发布**（2026-09-14 · 十模块 · 130 测试全过 · `mvn -B -ntp verify` 即门，GitLab pipeline 强制）。
   制品入 Nexus `maven-releases`：11 个坐标（9 个 `framework-*` jar + `framework-parent` / `lieshou-framework` 两个 pom）
   **+ 9 个 `-sources.jar`**。v0.3.1 是首个入 Nexus 的版本（缺 sources）；v0.3.0 从未分发。
@@ -38,7 +43,7 @@
 - 认证扩展（ADR-0023）：登录/验证码/注册/重置密码/切换租户/多租户选项已同源；默认租户可配置（`auth.default-tenant-code`，缺省 huntercat）。
 
 ## 待办
-- [x] v0.3.0 / v0.3.1 / v0.3.2 已发布（2026-09-14）
+- [x] v0.3.0 / v0.3.1 / v0.3.2 / v0.3.3 已发布（2026-09-14 ~ 09-15）
 - [x] 制品分发（2026-09-14）：Nexus `https://nexus.ts.huntercat.cn`，CI `deploy` stage 仅语义化 tag 触发；
       runner 已 map `nexus.ts.huntercat.cn` + 挂载卷自带 `caddy-root.crt`（job 里 keytool 导入）；
       凭证 = 项目 CI 变量 `NEXUS_DEPLOY_USER`/`NEXUS_DEPLOY_PASS`（protected+masked）
