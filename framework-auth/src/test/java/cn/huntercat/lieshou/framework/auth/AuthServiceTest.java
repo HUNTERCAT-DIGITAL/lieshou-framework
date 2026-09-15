@@ -337,9 +337,9 @@ class AuthServiceTest {
    * 验证码登录：user-service 返回 BaseException NOT_FOUND（Feign 404，该租户下手机号无账号）→ USER_NOT_FOUND(404)， 不是
    * 503。
    *
-   * <p>2026-09-14 生产事故（线上排查）：/api/auth/login/code 对未注册手机号返回 503「用户服务暂不可用」， 根因是
-   * findUserByTarget 只 catch RuntimeException —— BaseException 继承 RuntimeException，把业务否定 NOT_FOUND
-   * 也当成了依赖故障。密码登录的 findUserForLogin 有 isNotFound 分支，所以只有验证码登录/重置密码中招。
+   * <p>2026-09-14 生产事故（线上排查）：/api/auth/login/code 对未注册手机号返回 503「用户服务暂不可用」， 根因是 findUserByTarget 只
+   * catch RuntimeException —— BaseException 继承 RuntimeException，把业务否定 NOT_FOUND 也当成了依赖故障。密码登录的
+   * findUserForLogin 有 isNotFound 分支，所以只有验证码登录/重置密码中招。
    */
   @Test
   void loginWithCode_phoneNotFound_throwsUserNotFound() {
