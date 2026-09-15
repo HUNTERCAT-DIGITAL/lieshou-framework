@@ -4,6 +4,25 @@
 > 公共 API 变更（包移动 / 类删除 / 签名变化）必须在此记录，消费方升级前对照评估适配范围。
 > 格式：`## <版本/区间>` → `### 破坏性变更` / `### 新增` / `### 修复`。
 
+## 0.3.4（2026-09-15）
+
+### 修复
+- **`AuthService.findUserByTarget`：user-service 的业务否定 `NOT_FOUND` 不再被吞成 503**（BUG_LESSONS E55
+  回归修复）—— `BaseException` 继承 `RuntimeException`，原先只 catch `RuntimeException` 会把「该租户下无此
+  手机号/邮箱」的 404 误判为依赖故障，重包成 `SERVICE_UNAVAILABLE`。表现：`/api/auth/login/code` 与
+  `/api/auth/reset-password` 对未注册手机号/邮箱一律 503，误导用户且让排障误以为 user-service 挂了。
+  修法对齐同类的 `findUserForLogin`：`BaseException` 先走 `isNotFound` → 返回 null（调用方抛
+  `USER_NOT_FOUND` 404）；其他业务否定透传错误码；仅真依赖故障映射 503。
+- 新增回归测试 `loginWithCode_phoneNotFound_throwsUserNotFound` ·
+  `resetPassword_emailNotFound_throwsUserNotFound`（修复前实测 `expected: USER_NOT_FOUND but was:
+  SERVICE_UNAVAILABLE`）。
+
+### 说明
+- 该修复此前只存在于侧分支 `hotfix/0.1.x-auth-code-503`（`177cf9a`），**从未进入 main**；消费方在
+  「删 framework submodule、改从 Nexus 按坐标解析」时把 pin 从侧分支收回 main，导致修复丢失（2026-09-14
+  Nexus 迁移后发现）。本次合入 main 并随制品发布。
+- 无公共 API 变更，消费方升 0.3.4 无需改代码（建议所有已切 Nexus 的服务仓升到 ≥ 0.3.4）。
+
 ## 0.3.3（2026-09-15）
 
 ### 修复
