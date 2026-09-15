@@ -15,6 +15,10 @@ default:
 verify:
   stage: verify
   timeout: 30m
+  before_script:
+    # 内部 CA 进 JVM 信任库（job 容器不认 Caddy 自签 CA；CA 由 runner 挂载卷 /root/.m2 提供）
+    # —— 少了这步，Maven 向 Nexus 校验/拉取依赖时会 `PKIX path building failed`（实测 2026-09-15 红过）
+    - test -f /root/.m2/caddy-root.crt && keytool -importcert -noprompt -trustcacerts -alias caddy-root -file /root/.m2/caddy-root.crt -keystore "$JAVA_HOME/lib/security/cacerts" -storepass changeit
   script:
     - java -version
     - mvn -B -ntp verify
